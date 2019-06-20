@@ -2,6 +2,7 @@
 #include<opencv2/imgproc/imgproc.hpp>
 #include<iostream>
 #include<windows.h>
+#include <conio.h>
 #include "StringHelper.h"
 
 using namespace std;
@@ -11,6 +12,8 @@ using namespace std;
 #define WINDOW_NAME "Frame grabber"
 
 #define FRAME_STEP 1
+
+BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's
 
 /* cvUI	related	*/
 /* on checkbox	*/ bool isRecordingEnabled;
@@ -77,21 +80,21 @@ void modeUpdate(int requestedFPS)
 		outputVideo.open(outputPath, codec, requestedFPS, size);
 		modeString = "New file opened";
 	}
-	if (GetAsyncKeyState(0x53) || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
+	if (GetKeyState(0x53) || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
 	{
 		currentMode.recording = true;
 		currentMode.stop = false;
 		isRecordingEnabled = true;
 		modeString = "Camera to video file";
 	}
-	if (GetAsyncKeyState(0x45) || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
+	if (GetKeyState(0x45) || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
 		modeString = "Stopped";
 		outputVideo.release();
 	}
-	if (GetAsyncKeyState(0x56)) /* 56 is vk code for V */
+	if (GetKeyState(0x56)) /* 56 is vk code for V */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
@@ -115,11 +118,13 @@ void modeUpdate(int requestedFPS)
 			modeString = "Stopped video mode, started recording mode.";
 		}
 	}
-	if (GetAsyncKeyState(0x20) && currentMode.modeVideo) /* 20 is vk code for SPACE */
+	if (GetKeyState(0x20) && currentMode.modeVideo) /* 20 is vk code for SPACE */
 	{
 		currentMode.playVideo = !currentMode.playVideo;
 		modeString = "Running/Stopped video";
 	}
+	// Clear keyborad
+	SetKeyboardState(clearKeys);
 }
 
 /* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
