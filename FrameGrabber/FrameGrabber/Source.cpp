@@ -3,17 +3,13 @@
 #include<iostream>
 #include<windows.h>
 #include <conio.h>
-#include "StringHelper.h"
+#include "HeaderFiles/StringHelper.h"
 
 using namespace std;
 
 #define CVUI_IMPLEMENTATION
 #include "HeaderFiles/cvui.h"
 #define WINDOW_NAME "Frame grabber"
-
-#define FRAME_STEP 1
-
-BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's
 
 /* cvUI	related	*/
 /* on checkbox	*/ bool isRecordingEnabled;
@@ -26,6 +22,7 @@ BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's
 /* stamps	*/ cv::Mat frameToControlMode, frameToSave;
 
 /* Helpers and other variables */
+BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
@@ -33,6 +30,7 @@ string windowResult = "End result";
 unsigned long long int frameNum = 0; // frame counter
 unsigned long long int frameMin = 0; // min frame number
 unsigned long long int frameMax = 0; // max frame number
+unsigned long long int frameStep = 1; // current frame step
 double capWidth = 0.;
 double capHeight = 0.;
 
@@ -51,10 +49,6 @@ struct modes
 
 struct modes currentMode = { false, false, false, false };
 
-/**
- * Using GetAsyncKeyState | Microsoft Docs: https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getasynckeystate
- */
-
 inline void openCamera()
 {
 	/* Open a camera for video capturing */
@@ -71,6 +65,16 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
+	bool pressedS = GetKeyState(0x53);
+	bool pressedE = GetKeyState(0x45);
+	bool pressedV = GetKeyState(0x56);
+	bool pressedSpace = GetKeyState(0x20);
+	bool pressedLeft = GetKeyState(0x25);
+	bool pressedRight = GetKeyState(0x27);
+	bool pressedShift = GetKeyState(0x10);
+	bool pressedCtrl = GetKeyState(0x11);
+	bool pressedAlt = GetKeyState(0x12);
+
 	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop && !currentMode.modeVideo)
 	{
 		videoName = strhelp::createVideoName();
@@ -80,21 +84,21 @@ void modeUpdate(int requestedFPS)
 		outputVideo.open(outputPath, codec, requestedFPS, size);
 		modeString = "New file opened";
 	}
-	if (GetKeyState(0x53) || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
+	if (pressedS || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
 	{
 		currentMode.recording = true;
 		currentMode.stop = false;
 		isRecordingEnabled = true;
 		modeString = "Camera to video file";
 	}
-	if (GetKeyState(0x45) || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
+	if (pressedE || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
 		modeString = "Stopped";
 		outputVideo.release();
 	}
-	if (GetKeyState(0x56)) /* 56 is vk code for V */
+	if (pressedV) /* 56 is vk code for V */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
@@ -118,7 +122,7 @@ void modeUpdate(int requestedFPS)
 			modeString = "Stopped video mode, started recording mode.";
 		}
 	}
-	if (GetKeyState(0x20) && currentMode.modeVideo) /* 20 is vk code for SPACE */
+	if (pressedSpace && currentMode.modeVideo) /* 20 is vk code for SPACE */
 	{
 		currentMode.playVideo = !currentMode.playVideo;
 		modeString = "Running/Stopped video";
@@ -194,9 +198,9 @@ int main(int argc, char* argv[])
 			if (currentMode.modeVideo)
 			{
 				/// TODO: Add handle of playing the film
-				if (currentMode.playVideo && (frameNum + 1) < frameMax)
+				if (currentMode.playVideo && (frameNum + frameStep) < frameMax)
 				{
-					frameNum += FRAME_STEP;
+					frameNum += frameStep;
 				}
 			}
 			else
