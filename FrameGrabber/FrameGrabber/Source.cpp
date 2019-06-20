@@ -26,6 +26,8 @@ BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
+string userPath = ""; // path to file defined by user
+char userChar = 0;
 string windowResult = "End result";
 unsigned long long int frameNum = 0; // frame counter
 unsigned long long int frameMin = 0; // min frame number
@@ -66,67 +68,75 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
-	bool pressedS = GetKeyState(0x53);
-	bool pressedE = GetKeyState(0x45);
-	bool pressedV = GetKeyState(0x56);
-	bool pressedSpace = GetKeyState(0x20);
-	bool pressedLeft = GetKeyState(0x25);
-	bool pressedRight = GetKeyState(0x27);
-	bool pressedShift = GetKeyState(0x10);
-	bool pressedCtrl = GetKeyState(0x11);
-	bool pressedAlt = GetKeyState(0x12);
+	if (isPathInputModeEnabled)
+	{
+		if (GetKeyState(0x53))
+			userChar = 's';
+	}
+	else
+	{
+		bool pressedS = GetKeyState(0x53);
+		bool pressedE = GetKeyState(0x45);
+		bool pressedV = GetKeyState(0x56);
+		bool pressedSpace = GetKeyState(0x20);
+		bool pressedLeft = GetKeyState(0x25);
+		bool pressedRight = GetKeyState(0x27);
+		bool pressedShift = GetKeyState(0x10);
+		bool pressedCtrl = GetKeyState(0x11);
+		bool pressedAlt = GetKeyState(0x12);
 
-	if (!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo)
-	{
-		videoName = strhelp::createVideoName();
-		const auto outputPath = path + videoName;
-		const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
-		const auto size = cv::Size(320, 240);
-		outputVideo.open(outputPath, codec, requestedFPS, size);
-		modeString = "New file opened";
-	}
-	if (pressedS || isRecordingModeEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
-	{
-		currentMode.recording = true;
-		currentMode.stop = false;
-		isRecordingModeEnabled = true;
-		modeString = "Camera to video file";
-	}
-	if (pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
-	{
-		currentMode.recording = false;
-		currentMode.stop = true;
-		modeString = "Stopped";
-		outputVideo.release();
-	}
-	if (pressedV) /* 56 is vk code for V */
-	{
-		currentMode.recording = false;
-		currentMode.stop = true;
-		currentMode.modeVideo = !currentMode.modeVideo;
-		currentMode.playVideo = false;
-		if (currentMode.modeVideo)
+		if (!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo)
 		{
-			// cap.release();
+			videoName = strhelp::createVideoName();
+			const auto outputPath = path + videoName;
+			const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
+			const auto size = cv::Size(320, 240);
+			outputVideo.open(outputPath, codec, requestedFPS, size);
+			modeString = "New file opened";
+		}
+		if (pressedS || isRecordingModeEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
+		{
+			currentMode.recording = true;
+			currentMode.stop = false;
+			isRecordingModeEnabled = true;
+			modeString = "Camera to video file";
+		}
+		if (pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
+		{
+			currentMode.recording = false;
+			currentMode.stop = true;
+			modeString = "Stopped";
 			outputVideo.release();
-			// TODO: Specify the name of file somehow
-			cap.open("C:\\Studies\\OpenCVPROJ\\OpenCVFrameGrabber\\FrameGrabber\\FrameGrabber\\Video\\20_6_2019_21h27m44s.avi");
-			// Set max and starting frames
-			frameNum = 0;
-			frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
-			modeString = "Stopped recording if there was any, open video mode.";
 		}
-		else
+		if (pressedV) /* 56 is vk code for V */
 		{
-			// cap.release();
-			openCamera();
-			modeString = "Stopped video mode, started recording mode.";
+			currentMode.recording = false;
+			currentMode.stop = true;
+			currentMode.modeVideo = !currentMode.modeVideo;
+			currentMode.playVideo = false;
+			if (currentMode.modeVideo)
+			{
+				// cap.release();
+				outputVideo.release();
+				// TODO: Specify the name of file somehow
+				cap.open("C:\\Studies\\OpenCVPROJ\\OpenCVFrameGrabber\\FrameGrabber\\FrameGrabber\\Video\\20_6_2019_21h27m44s.avi");
+				// Set max and starting frames
+				frameNum = 0;
+				frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+				modeString = "Stopped recording if there was any, open video mode.";
+			}
+			else
+			{
+				// cap.release();
+				openCamera();
+				modeString = "Stopped video mode, started recording mode.";
+			}
 		}
-	}
-	if (pressedSpace && currentMode.modeVideo) /* 20 is vk code for SPACE */
-	{
-		currentMode.playVideo = !currentMode.playVideo;
-		modeString = "Running/Stopped video";
+		if (pressedSpace && currentMode.modeVideo) /* 20 is vk code for SPACE */
+		{
+			currentMode.playVideo = !currentMode.playVideo;
+			modeString = "Running/Stopped video";
+		}
 	}
 	// Clear keyborad
 	SetKeyboardState(clearKeys);
@@ -185,8 +195,15 @@ int main(int argc, char* argv[])
 			isPathInputModeEnabled = cvui::checkbox(gui, margin + padding, margin + 7 * padding, "Enable path input mode", &currentMode.pathInput);
 			if (isPathInputModeEnabled)
 			{
+				if (userChar != 0)
+				{
+					userPath += userChar;
+					userChar = 0;
+				}
 				int status = cvui::iarea(margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding);
 				cvui::rect(gui, margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding, 0x4d4d4d, 0x373737);
+				const char *userPathC = userPath.c_str();
+				cvui::printf(gui, margin + 2 * padding, margin + 8 * padding, userPathC);
 				// TODO: get rid of it, helper only
 				switch (status) {
 				case cvui::CLICK:  std::cout << "Clicked!" << std::endl; break;
