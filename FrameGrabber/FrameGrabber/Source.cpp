@@ -2,6 +2,7 @@
 #include<opencv2/imgproc/imgproc.hpp>
 #include<iostream>
 #include<windows.h>
+#include "StringHelper.h"
 
 using namespace std;
 
@@ -23,7 +24,6 @@ cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
 string timestamp_for_filename, day;
 string window_result = "End result";
-SYSTEMTIME lt;
 
 /* Video writing */
 string video_name;
@@ -113,12 +113,8 @@ int main(int argc, char* argv[])
 			cvui::printf(menu, 2 * margin + cap_width, margin + 30, "Set FPS:");
 			cvui::trackbar(menu, 2 * margin + cap_width, margin + 50, 320, &requestedFPS, 10, 100, 1);
 			cvui::imshow(WINDOW_NAME, menu);
-			
-			/* Get timestamp */
-			GetLocalTime(&lt);
-			timestamp_for_filename = to_string(lt.wDay) + "-" + to_string(lt.wMonth) + "-" + to_string(lt.wYear) + " " + to_string(lt.wHour) + "h" + to_string(lt.wMinute) + "m" + to_string(lt.wSecond) + "s";
 
-			video_name = timestamp_for_filename + ".avi";
+			video_name = strhelp::createVideoName();
 			
 			mode_update(requestedFPS);
 
