@@ -34,9 +34,11 @@ struct modes
 {
 	bool recording;
 	bool stop;
+	bool modeVideo;	// Open video mode, exit the mode pressing V
+	bool playVideo; // Start/stop running of video
 };
 
-struct modes currentMode = { false, false };
+struct modes currentMode = { false, false, false };
 
 /**
  * Using GetAsyncKeyState | Microsoft Docs: https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getasynckeystate
@@ -45,6 +47,7 @@ void modeUpdate(int requestedFPS)
 {
 	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop)
 	{
+		videoName = strhelp::createVideoName();
 		const auto outputPath = path + videoName;
 		const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
 		const auto size = cv::Size(320, 240);
@@ -63,6 +66,20 @@ void modeUpdate(int requestedFPS)
 		currentMode.stop = true;
 		modeString = "Stopped";
 		outputVideo.release();
+	}
+	if (GetAsyncKeyState(0x56)) /* 56 is vk code for V */
+	{
+		currentMode.recording = false;
+		currentMode.stop = true;
+		currentMode.modeVideo = true;
+		currentMode.playVideo = false;
+		modeString = "Stoped recording if there was any, open video mode.";
+		outputVideo.release();
+	}
+	if (GetAsyncKeyState(0x20) || currentMode.modeVideo) /* 20 is vk code for SPACE */
+	{
+		currentMode.playVideo = !currentMode.playVideo;
+		modeString = "Running video";
 	}
 }
 
@@ -109,8 +126,11 @@ int main(int argc, char* argv[])
 	{
 		try 
 		{
-			cap >> frame;
-			frame.copyTo(frameToSave);
+			if (!currentMode.modeVideo)
+			{
+				cap >> frame;
+				frame.copyTo(frameToSave);
+			}
 
 			/* Set cvUI window */
 			cvui::rect(gui, margin, margin, padding + menuWidth + padding, cvUIWindowHeight - 2 * margin, 0x454545, 0x454545);
@@ -129,13 +149,19 @@ int main(int argc, char* argv[])
 			
 			cvui::imshow(WINDOW_NAME, gui);
 
-			videoName = strhelp::createVideoName();
-			
 			modeUpdate(requestedFPS);
 
-			if (currentMode.recording) 
+			// Some video is opened right now
+			if (currentMode.modeVideo)
 			{
-				outputVideo.write(frameToSave);
+				/// TODO: Add handle of playing the film
+			}
+			else
+			{
+				if (currentMode.recording)
+				{
+					outputVideo.write(frameToSave);
+				}
 			}
 
 			frameToSave.copyTo(frameToControlMode);
