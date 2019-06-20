@@ -14,21 +14,21 @@ using namespace std;
 /* on checkbox	*/ bool isRecordingEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20;
+/* common		*/ int padding = 20;
 
 /* Matrices	*/
-/* basic	*/ cv::Mat frame, prev_frame;
-/* stamps	*/ cv::Mat frame_to_control_mode, frame_to_save;
+/* basic	*/ cv::Mat frame;
+/* stamps	*/ cv::Mat frameToControlMode, frameToSave;
 
 /* Helpers and other variables */
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
-string timestamp_for_filename, day;
 string window_result = "End result";
 
 /* Video writing */
-string video_name;
-cv::VideoWriter output_video;
-string mode_string;
+string videoName;
+cv::VideoWriter outputVideo;
+string modeString;
 
 struct modes
 {
@@ -36,33 +36,33 @@ struct modes
 	bool stop;
 };
 
-struct modes current_mode = { false, false };
+struct modes currentMode = { false, false };
 
 /**
  * Using GetAsyncKeyState | Microsoft Docs: https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getasynckeystate
  */
-void mode_update(int requestedFPS)
+void modeUpdate(int requestedFPS)
 {
-	if (!output_video.isOpened() && isRecordingEnabled && !current_mode.stop)
+	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop)
 	{
-		const auto output_path = path + video_name;
+		const auto outputPath = path + videoName;
 		const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
 		const auto size = cv::Size(320, 240);
-		output_video.open(output_path, codec, requestedFPS, size);
-		mode_string = "New file opened";
+		outputVideo.open(outputPath, codec, requestedFPS, size);
+		modeString = "New file opened";
 	}
 	if (GetAsyncKeyState(0x53) || isRecordingEnabled) /* 53 is vk code for S */
 	{
-		current_mode.recording = true;
-		current_mode.stop = false;
-		mode_string = "Camera to video file";
+		currentMode.recording = true;
+		currentMode.stop = false;
+		modeString = "Camera to video file";
 	}
 	if (GetAsyncKeyState(0x45)) /* 45 is vk code for E */
 	{
-		current_mode.recording = false;
-		current_mode.stop = true;
-		mode_string = "Stopped";
-		output_video.release();
+		currentMode.recording = false;
+		currentMode.stop = true;
+		modeString = "Stopped";
+		outputVideo.release();
 	}
 }
 
@@ -73,64 +73,79 @@ void exit(cv::VideoCapture obj)
 	cv::destroyAllWindows();
 }
 
-
 int main(int argc, char* argv[]) 
 {
 	//TODO: find more elegant way to determine path
-	string argv_str(argv[0]);
-	string base = argv_str.substr(0, argv_str.find_last_of("\\"));
+	string argvStr(argv[0]);
+	string base = argvStr.substr(0, argvStr.find_last_of("\\"));
 	string base2 = base.substr(0, base.find_last_of("\\"));
 	string base3 = base2.substr(0, base2.find_last_of("\\"));
 	path = base3 + "\\FrameGrabber\\Video\\";
-
 	
 	/* Open a camera for video capturing */
 	cv::VideoCapture cap;
 	cap.open(0);
 
 	/* Set properties */
-	const auto cap_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	const auto cap_height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	auto capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	auto capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
+	capWidth = capWidth / 2;
+	capHeight = capHeight / 2;
 
 	/* Declare important windows */
-	cv::namedWindow(window_result, cv::WINDOW_AUTOSIZE);
+	cv::namedWindow(windowResult, cv::WINDOW_AUTOSIZE);
 
 	/* Initialize cvUI menu window */
+	int menuWidth = 200;
 	cvui::init(WINDOW_NAME);
-	cv::Mat menu = cv::Mat(cv::Size(cap_width * 2, cap_height + 40), CV_8UC3);
+	int cvUIWindowWidth = margin + padding + menuWidth + 3 * padding + capWidth + 3 * padding + capWidth + padding + margin;
+	int cvUIWindowHeight = 700;
+	cv::Mat gui = cv::Mat(cv::Size(cvUIWindowWidth, cvUIWindowHeight), CV_8UC3);
+	gui = cv::Scalar(55, 55, 55);
 
 	while (cv::waitKey(15) != char(27))
 	{
 		try 
 		{
 			cap >> frame;
-			frame.copyTo(frame_to_save);
+			frame.copyTo(frameToSave);
 
 			/* Set cvUI window */
-			menu = cv::Scalar(49, 52, 49);
-			cvui::image(menu, margin, margin, frame);
-			isRecordingEnabled = cvui::checkbox(menu, 2 * margin + cap_width, margin, "Enable recording", &current_mode.recording);
-			cvui::printf(menu, 2 * margin + cap_width, margin + 30, "Set FPS:");
-			cvui::trackbar(menu, 2 * margin + cap_width, margin + 50, 320, &requestedFPS, 10, 100, 1);
-			cvui::imshow(WINDOW_NAME, menu);
-
-			video_name = strhelp::createVideoName();
+			cvui::rect(gui, margin, margin, padding + menuWidth + padding, cvUIWindowHeight - 2 * margin, 0x454545, 0x454545);
+			cvui::printf(gui, margin + padding, margin + padding, "Menu");
+			isRecordingEnabled = cvui::checkbox(gui, margin + padding, margin + 2 * padding, "Record straight to video file", &currentMode.recording);
+			cvui::printf(gui, margin + 2 * padding, margin + 3 * padding, "Set FPS:");
+			cvui::trackbar(gui, margin + 2 * padding, margin + 4 * padding, menuWidth - padding, &requestedFPS, 10, 100, 1);
 			
-			mode_update(requestedFPS);
+			cvui::rect(gui, margin + padding + menuWidth + 2 * padding, margin, padding + capWidth + padding, margin + capHeight + 4 * padding, 0x454545, 0x454545);
+			cvui::image(gui, margin + padding + menuWidth + 3 * padding, margin + padding, frame);
+			cvui::trackbar(gui, margin + padding + menuWidth + 3 * padding, margin + padding + capHeight + padding, capWidth, &requestedFPS, 10, 100, 1);
 
-			if (current_mode.recording) 
+			//TODO: Obs³uga drugiego okna, narazie placeholder
+			cvui::rect(gui, margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding, margin, padding + capWidth + padding, padding + capHeight + padding, 0x454545, 0x454545);
+			cvui::image(gui, margin + padding + menuWidth + 3 * padding + capWidth + 3 * padding, margin + padding, frame);
+			
+			cvui::imshow(WINDOW_NAME, gui);
+
+      video_name = strhelp::createVideoName();
+			
+			modeUpdate(requestedFPS);
+
+			if (currentMode.recording) 
 			{
-				output_video.write(frame_to_save);
+				outputVideo.write(frameToSave);
 			}
 
-			frame_to_save.copyTo(frame_to_control_mode);
+			frameToSave.copyTo(frameToControlMode);
 
 			/* Describe mode */
-			cv::putText(frame_to_control_mode, mode_string, cv::Point(15, 25), cv::FONT_HERSHEY_PLAIN, 1, red, 1);
+			cv::putText(frameToControlMode, modeString, cv::Point(15, 25), cv::FONT_HERSHEY_PLAIN, 1, red, 1);
 
 			//TODO: Eventually get rid of it
 			/* Show a frame with mode type */
-			cv::imshow(window_result, frame_to_control_mode);
+			cv::imshow(windowResult, frameToControlMode);
 		}
 		catch (cv::Exception &e)
 		{
