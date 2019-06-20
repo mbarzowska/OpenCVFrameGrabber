@@ -2,7 +2,8 @@
 #include<opencv2/imgproc/imgproc.hpp>
 #include<iostream>
 #include<windows.h>
-#include "StringHelper.h"
+#include <conio.h>
+#include "HeaderFiles/StringHelper.h"
 
 using namespace std;
 
@@ -21,9 +22,17 @@ using namespace std;
 /* stamps	*/ cv::Mat frameToControlMode, frameToSave;
 
 /* Helpers and other variables */
+BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
+cv::VideoCapture cap;
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
 string windowResult = "End result";
+unsigned long long int frameNum = 0; // frame counter
+unsigned long long int frameMin = 0; // min frame number
+unsigned long long int frameMax = 0; // max frame number
+unsigned long long int frameStep = 1; // current frame step
+double capWidth = 0.;
+double capHeight = 0.;
 
 /* Video writing */
 string videoName;
@@ -34,36 +43,92 @@ struct modes
 {
 	bool recording;
 	bool stop;
+	bool modeVideo;	// Open video mode, exit the mode pressing V
+	bool playVideo; // Start/stop running of video
 };
 
-struct modes currentMode = { false, false };
+struct modes currentMode = { false, false, false, false };
 
-/**
- * Using GetAsyncKeyState | Microsoft Docs: https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getasynckeystate
- */
+inline void openCamera()
+{
+	/* Open a camera for video capturing */
+	cap.open(0);
+
+	/* Set properties */
+	capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
+	capWidth = capWidth / 2;
+	capHeight = capHeight / 2;
+}
+
 void modeUpdate(int requestedFPS)
 {
-	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop)
+	bool pressedS = GetKeyState(0x53);
+	bool pressedE = GetKeyState(0x45);
+	bool pressedV = GetKeyState(0x56);
+	bool pressedSpace = GetKeyState(0x20);
+	bool pressedLeft = GetKeyState(0x25);
+	bool pressedRight = GetKeyState(0x27);
+	bool pressedShift = GetKeyState(0x10);
+	bool pressedCtrl = GetKeyState(0x11);
+	bool pressedAlt = GetKeyState(0x12);
+
+	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop && !currentMode.modeVideo)
 	{
+		videoName = strhelp::createVideoName();
 		const auto outputPath = path + videoName;
 		const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
 		const auto size = cv::Size(320, 240);
 		outputVideo.open(outputPath, codec, requestedFPS, size);
 		modeString = "New file opened";
 	}
-	if (GetAsyncKeyState(0x53) || isRecordingEnabled) /* 53 is vk code for S */
+	if (pressedS || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
 	{
 		currentMode.recording = true;
 		currentMode.stop = false;
+		isRecordingEnabled = true;
 		modeString = "Camera to video file";
 	}
-	if (GetAsyncKeyState(0x45) || !isRecordingEnabled) /* 45 is vk code for E */
+	if (pressedE || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
 		modeString = "Stopped";
 		outputVideo.release();
 	}
+	if (pressedV) /* 56 is vk code for V */
+	{
+		currentMode.recording = false;
+		currentMode.stop = true;
+		currentMode.modeVideo = !currentMode.modeVideo;
+		currentMode.playVideo = false;
+		if (currentMode.modeVideo)
+		{
+			// cap.release();
+			outputVideo.release();
+			// TODO: Specify the name of file somehow
+			cap.open("C:\\Studies\\OpenCVPROJ\\OpenCVFrameGrabber\\FrameGrabber\\FrameGrabber\\Video\\20_6_2019_21h27m44s.avi");
+			// Set max and starting frames
+			frameNum = 0;
+			frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+			modeString = "Stopped recording if there was any, open video mode.";
+		}
+		else
+		{
+			// cap.release();
+			openCamera();
+			modeString = "Stopped video mode, started recording mode.";
+		}
+	}
+	if (pressedSpace && currentMode.modeVideo) /* 20 is vk code for SPACE */
+	{
+		currentMode.playVideo = !currentMode.playVideo;
+		modeString = "Running/Stopped video";
+	}
+	// Clear keyborad
+	SetKeyboardState(clearKeys);
 }
 
 /* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
@@ -81,18 +146,8 @@ int main(int argc, char* argv[])
 	string base2 = base.substr(0, base.find_last_of("\\"));
 	string base3 = base2.substr(0, base2.find_last_of("\\"));
 	path = base3 + "\\FrameGrabber\\Video\\";
-	
-	/* Open a camera for video capturing */
-	cv::VideoCapture cap;
-	cap.open(0);
 
-	/* Set properties */
-	auto capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	auto capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-	cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
-	cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
-	capWidth = capWidth / 2;
-	capHeight = capHeight / 2;
+	openCamera();
 
 	/* Declare important windows */
 	cv::namedWindow(windowResult, cv::WINDOW_AUTOSIZE);
@@ -109,8 +164,16 @@ int main(int argc, char* argv[])
 	{
 		try 
 		{
-			cap >> frame;
-			frame.copyTo(frameToSave);
+			if (currentMode.modeVideo)
+			{
+				cap.set(cv::CAP_PROP_POS_FRAMES, frameNum);
+				cap >> frame;
+			}
+			else
+			{
+				cap >> frame;
+				frame.copyTo(frameToSave);
+			}
 
 			/* Set cvUI window */
 			cvui::rect(gui, margin, margin, padding + menuWidth + padding, cvUIWindowHeight - 2 * margin, 0x454545, 0x454545);
@@ -129,13 +192,23 @@ int main(int argc, char* argv[])
 			
 			cvui::imshow(WINDOW_NAME, gui);
 
-			videoName = strhelp::createVideoName();
-			
 			modeUpdate(requestedFPS);
 
-			if (currentMode.recording) 
+			// Some video is opened right now
+			if (currentMode.modeVideo)
 			{
-				outputVideo.write(frameToSave);
+				/// TODO: Add handle of playing the film
+				if (currentMode.playVideo && (frameNum + frameStep) < frameMax)
+				{
+					frameNum += frameStep;
+				}
+			}
+			else
+			{
+				if (currentMode.recording)
+				{
+					outputVideo.write(frameToSave);
+				}
 			}
 
 			frameToSave.copyTo(frameToControlMode);
