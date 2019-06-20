@@ -57,7 +57,7 @@ void modeUpdate(int requestedFPS)
 		currentMode.stop = false;
 		modeString = "Camera to video file";
 	}
-	if (GetAsyncKeyState(0x45)) /* 45 is vk code for E */
+	if (GetAsyncKeyState(0x45) || !isRecordingEnabled) /* 45 is vk code for E */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
