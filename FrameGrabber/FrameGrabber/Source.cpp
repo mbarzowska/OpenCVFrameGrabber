@@ -23,7 +23,7 @@ using namespace std;
 /* Helpers and other variables */
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
-string window_result = "End result";
+string windowResult = "End result";
 
 /* Video writing */
 string videoName;
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 			
 			cvui::imshow(WINDOW_NAME, gui);
 
-      video_name = strhelp::createVideoName();
+			videoName = strhelp::createVideoName();
 			
 			modeUpdate(requestedFPS);
 
