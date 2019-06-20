@@ -10,6 +10,8 @@ using namespace std;
 #include "HeaderFiles/cvui.h"
 #define WINDOW_NAME "Frame grabber"
 
+#define FRAME_STEP 1
+
 /* cvUI	related	*/
 /* on checkbox	*/ bool isRecordingEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
@@ -21,9 +23,13 @@ using namespace std;
 /* stamps	*/ cv::Mat frameToControlMode, frameToSave;
 
 /* Helpers and other variables */
+cv::VideoCapture cap;
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
 string windowResult = "End result";
+unsigned long long int frameNum = 0; // frame counter
+unsigned long long int frameMin = 0; // min frame number
+unsigned long long int frameMax = 0; // max frame number
 
 /* Video writing */
 string videoName;
@@ -47,6 +53,7 @@ void modeUpdate(int requestedFPS)
 {
 	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop)
 	{
+		cap.open(0);
 		videoName = strhelp::createVideoName();
 		const auto outputPath = path + videoName;
 		const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
@@ -72,15 +79,29 @@ void modeUpdate(int requestedFPS)
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
-		currentMode.modeVideo = true;
 		currentMode.playVideo = false;
-		modeString = "Stoped recording if there was any, open video mode.";
-		outputVideo.release();
+		currentMode.modeVideo = !currentMode.modeVideo;
+		if (currentMode.modeVideo)
+		{
+			// cap.release();
+			outputVideo.release();
+			// TODO: Specify the name of file somehow
+			cap.open("C:\\Studies\\OpenCVPROJ\\OpenCVFrameGrabber\\FrameGrabber\\FrameGrabber\\Video\\20_6_2019_21h27m44s.avi");
+			// Set max and starting frames
+			frameNum = 0;
+			frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+			modeString = "Stopped recording if there was any, open video mode.";
+		}
+		else
+		{
+			// cap.release();
+			modeString = "Stopped video mode, started recording mode.";
+		}
 	}
-	if (GetAsyncKeyState(0x20) || currentMode.modeVideo) /* 20 is vk code for SPACE */
+	if (GetAsyncKeyState(0x20) && currentMode.modeVideo) /* 20 is vk code for SPACE */
 	{
 		currentMode.playVideo = !currentMode.playVideo;
-		modeString = "Running video";
+		modeString = "Running/Stopped video";
 	}
 }
 
@@ -101,7 +122,6 @@ int main(int argc, char* argv[])
 	path = base3 + "\\FrameGrabber\\Video\\";
 	
 	/* Open a camera for video capturing */
-	cv::VideoCapture cap;
 	cap.open(0);
 
 	/* Set properties */
@@ -127,7 +147,12 @@ int main(int argc, char* argv[])
 	{
 		try 
 		{
-			if (!currentMode.modeVideo)
+			if (currentMode.modeVideo)
+			{
+				cap.set(cv::CAP_PROP_POS_FRAMES, frameNum);
+				cap >> frame;
+			}
+			else
 			{
 				cap >> frame;
 				frame.copyTo(frameToSave);
@@ -156,6 +181,10 @@ int main(int argc, char* argv[])
 			if (currentMode.modeVideo)
 			{
 				/// TODO: Add handle of playing the film
+				if (currentMode.playVideo)
+				{
+					frameNum += FRAME_STEP;
+				}
 			}
 			else
 			{
