@@ -2,6 +2,7 @@
 #include<opencv2/imgproc/imgproc.hpp>
 #include<iostream>
 #include<windows.h>
+#include "StringHelper.h"
 
 using namespace std;
 
@@ -22,9 +23,7 @@ using namespace std;
 /* Helpers and other variables */
 cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
-string timestampForFilename, day;
-string windowResult = "End result";
-SYSTEMTIME lt;
+string window_result = "End result";
 
 /* Video writing */
 string videoName;
@@ -124,17 +123,13 @@ int main(int argc, char* argv[])
 			cvui::image(gui, margin + padding + menuWidth + 3 * padding, margin + padding, frame);
 			cvui::trackbar(gui, margin + padding + menuWidth + 3 * padding, margin + padding + capHeight + padding, capWidth, &requestedFPS, 10, 100, 1);
 
-			//TODO: Obs³uga drugiego okna, narazie placeholder
+			//TODO: ObsÂ³uga drugiego okna, narazie placeholder
 			cvui::rect(gui, margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding, margin, padding + capWidth + padding, padding + capHeight + padding, 0x454545, 0x454545);
 			cvui::image(gui, margin + padding + menuWidth + 3 * padding + capWidth + 3 * padding, margin + padding, frame);
 			
 			cvui::imshow(WINDOW_NAME, gui);
-			
-			/* Get timestamp */
-			GetLocalTime(&lt);
-			timestampForFilename = to_string(lt.wDay) + "-" + to_string(lt.wMonth) + "-" + to_string(lt.wYear) + " " + to_string(lt.wHour) + "h" + to_string(lt.wMinute) + "m" + to_string(lt.wSecond) + "s";
 
-			videoName = timestampForFilename + ".avi";
+      video_name = strhelp::createVideoName();
 			
 			modeUpdate(requestedFPS);
 

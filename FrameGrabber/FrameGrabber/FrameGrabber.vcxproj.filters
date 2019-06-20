@@ -26,5 +26,8 @@
     <ClInclude Include="HeaderFiles\EnhancedWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="StringHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
