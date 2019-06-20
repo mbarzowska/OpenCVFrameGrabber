@@ -38,7 +38,7 @@ struct modes
 	bool playVideo; // Start/stop running of video
 };
 
-struct modes currentMode = { false, false, false };
+struct modes currentMode = { false, false, false, false };
 
 /**
  * Using GetAsyncKeyState | Microsoft Docs: https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getasynckeystate
