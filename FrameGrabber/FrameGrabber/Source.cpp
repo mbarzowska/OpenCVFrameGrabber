@@ -30,6 +30,8 @@ string windowResult = "End result";
 unsigned long long int frameNum = 0; // frame counter
 unsigned long long int frameMin = 0; // min frame number
 unsigned long long int frameMax = 0; // max frame number
+double capWidth = 0.;
+double capHeight = 0.;
 
 /* Video writing */
 string videoName;
@@ -49,11 +51,25 @@ struct modes currentMode = { false, false, false, false };
 /**
  * Using GetAsyncKeyState | Microsoft Docs: https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getasynckeystate
  */
+
+inline void openCamera()
+{
+	/* Open a camera for video capturing */
+	cap.open(0);
+
+	/* Set properties */
+	capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
+	capWidth = capWidth / 2;
+	capHeight = capHeight / 2;
+}
+
 void modeUpdate(int requestedFPS)
 {
-	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop)
+	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop && !currentMode.modeVideo)
 	{
-		cap.open(0);
 		videoName = strhelp::createVideoName();
 		const auto outputPath = path + videoName;
 		const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
@@ -61,14 +77,14 @@ void modeUpdate(int requestedFPS)
 		outputVideo.open(outputPath, codec, requestedFPS, size);
 		modeString = "New file opened";
 	}
-	if (GetAsyncKeyState(0x53) || isRecordingEnabled) /* 53 is vk code for S */
+	if (GetAsyncKeyState(0x53) || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
 	{
 		currentMode.recording = true;
 		currentMode.stop = false;
 		isRecordingEnabled = true;
 		modeString = "Camera to video file";
 	}
-	if (GetAsyncKeyState(0x45) || !isRecordingEnabled) /* 45 is vk code for E */
+	if (GetAsyncKeyState(0x45) || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
@@ -79,8 +95,8 @@ void modeUpdate(int requestedFPS)
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
-		currentMode.playVideo = false;
 		currentMode.modeVideo = !currentMode.modeVideo;
+		currentMode.playVideo = false;
 		if (currentMode.modeVideo)
 		{
 			// cap.release();
@@ -95,6 +111,7 @@ void modeUpdate(int requestedFPS)
 		else
 		{
 			// cap.release();
+			openCamera();
 			modeString = "Stopped video mode, started recording mode.";
 		}
 	}
@@ -120,17 +137,8 @@ int main(int argc, char* argv[])
 	string base2 = base.substr(0, base.find_last_of("\\"));
 	string base3 = base2.substr(0, base2.find_last_of("\\"));
 	path = base3 + "\\FrameGrabber\\Video\\";
-	
-	/* Open a camera for video capturing */
-	cap.open(0);
 
-	/* Set properties */
-	auto capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	auto capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-	cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
-	cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
-	capWidth = capWidth / 2;
-	capHeight = capHeight / 2;
+	openCamera();
 
 	/* Declare important windows */
 	cv::namedWindow(windowResult, cv::WINDOW_AUTOSIZE);
@@ -181,7 +189,7 @@ int main(int argc, char* argv[])
 			if (currentMode.modeVideo)
 			{
 				/// TODO: Add handle of playing the film
-				if (currentMode.playVideo)
+				if (currentMode.playVideo && (frameNum + 1) < frameMax)
 				{
 					frameNum += FRAME_STEP;
 				}
