@@ -12,7 +12,7 @@ using namespace std;
 #define WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingEnabled;
+/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20;
 /* common		*/ int padding = 20;
@@ -45,6 +45,7 @@ struct modes
 	bool stop;
 	bool modeVideo;	// Open video mode, exit the mode pressing V
 	bool playVideo; // Start/stop running of video
+	bool pathInput; // Let get the path
 };
 
 struct modes currentMode = { false, false, false, false };
@@ -75,7 +76,7 @@ void modeUpdate(int requestedFPS)
 	bool pressedCtrl = GetKeyState(0x11);
 	bool pressedAlt = GetKeyState(0x12);
 
-	if (!outputVideo.isOpened() && isRecordingEnabled && !currentMode.stop && !currentMode.modeVideo)
+	if (!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo)
 	{
 		videoName = strhelp::createVideoName();
 		const auto outputPath = path + videoName;
@@ -84,14 +85,14 @@ void modeUpdate(int requestedFPS)
 		outputVideo.open(outputPath, codec, requestedFPS, size);
 		modeString = "New file opened";
 	}
-	if (pressedS || isRecordingEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
+	if (pressedS || isRecordingModeEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
 	{
 		currentMode.recording = true;
 		currentMode.stop = false;
-		isRecordingEnabled = true;
+		isRecordingModeEnabled = true;
 		modeString = "Camera to video file";
 	}
-	if (pressedE || !isRecordingEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
+	if (pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
 	{
 		currentMode.recording = false;
 		currentMode.stop = true;
@@ -178,10 +179,23 @@ int main(int argc, char* argv[])
 			/* Set cvUI window */
 			cvui::rect(gui, margin, margin, padding + menuWidth + padding, cvUIWindowHeight - 2 * margin, 0x454545, 0x454545);
 			cvui::printf(gui, margin + padding, margin + padding, "Menu");
-			isRecordingEnabled = cvui::checkbox(gui, margin + padding, margin + 2 * padding, "Record straight to video file", &currentMode.recording);
+			isRecordingModeEnabled = cvui::checkbox(gui, margin + padding, margin + 2 * padding, "Record straight to video file", &currentMode.recording);
 			cvui::printf(gui, margin + 2 * padding, margin + 3 * padding, "Set FPS:");
 			cvui::trackbar(gui, margin + 2 * padding, margin + 4 * padding, menuWidth - padding, &requestedFPS, 10, 100, 1);
-			
+			isPathInputModeEnabled = cvui::checkbox(gui, margin + padding, margin + 7 * padding, "Enable path input mode", &currentMode.pathInput);
+			if (isPathInputModeEnabled)
+			{
+				int status = cvui::iarea(margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding);
+				cvui::rect(gui, margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding, 0x4d4d4d, 0x373737);
+				// TODO: get rid of it, helper only
+				switch (status) {
+				case cvui::CLICK:  std::cout << "Clicked!" << std::endl; break;
+				case cvui::DOWN:   cvui::printf(gui, margin + padding, margin + 9 * padding, "Mouse is: DOWN"); break;
+				case cvui::OVER:   cvui::printf(gui, margin + padding, margin + 9 * padding, "Mouse is: OVER"); break;
+				case cvui::OUT:    cvui::printf(gui, margin + padding, margin + 9 * padding, "Mouse is: OUT"); break;
+				}
+			}
+
 			cvui::rect(gui, margin + padding + menuWidth + 2 * padding, margin, padding + capWidth + padding, margin + capHeight + 4 * padding, 0x454545, 0x454545);
 			cvui::image(gui, margin + padding + menuWidth + 3 * padding, margin + padding, frame);
 			cvui::trackbar(gui, margin + padding + menuWidth + 3 * padding, margin + padding + capHeight + padding, capWidth, &requestedFPS, 10, 100, 1);
