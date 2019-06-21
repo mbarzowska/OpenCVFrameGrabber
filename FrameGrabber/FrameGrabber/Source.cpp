@@ -96,7 +96,8 @@ void modeUpdate(int requestedFPS)
 	}
 	else
 	{
-		if (!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo)
+		if ((!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo) ||
+			(!outputVideo.isOpened() && isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
 		{
 			videoName = strhelp::createVideoName();
 			const auto outputPath = path + videoName;
@@ -105,14 +106,16 @@ void modeUpdate(int requestedFPS)
 			outputVideo.open(outputPath, codec, requestedFPS, size);
 			modeString = "New file opened";
 		}
-		if (pressedS || isRecordingModeEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
+		if ((pressedS || isRecordingModeEnabled && !currentMode.modeVideo) ||
+			(isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo)) /* 53 is vk code for S */
 		{
 			currentMode.recording = true;
 			currentMode.stop = false;
 			isRecordingModeEnabled = true;
-			modeString = "Camera to video file";
+			modeString = "To video file";
 		}
-		if (pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
+		if ((pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) ||
+			(!isRecordingModeEnabled && !currentMode.playVideo)) /* 45 is vk code for E */
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
@@ -129,8 +132,7 @@ void modeUpdate(int requestedFPS)
 			{
 				// cap.release();
 				outputVideo.release();
-				// TODO: Specify the name of file somehow
-				cap.open("C:\\Studies\\OpenCVPROJ\\OpenCVFrameGrabber\\FrameGrabber\\FrameGrabber\\Video\\20_6_2019_21h27m44s.avi");
+				cap.open(userPath);
 				// Set max and starting frames
 				frameNum = 0;
 				frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
@@ -239,10 +241,20 @@ int main(int argc, char* argv[])
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
+				if (currentMode.playVideo && currentMode.recording)
+				{
+					outputVideo.write(frame);
+				}
 				/// TODO: Add handle of playing the film
 				if (currentMode.playVideo && (frameNum + frameStep) < frameMax)
 				{
 					frameNum += frameStep;
+				} 
+				else if (currentMode.playVideo && (frameNum + frameStep) >= frameMax)
+					// replaying
+				{
+					frameNum = 0;
+					cap.set(cv::CAP_PROP_POS_FRAMES, 0);
 				}
 			}
 			else
