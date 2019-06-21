@@ -68,23 +68,34 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
+	bool pressedS = GetKeyState(0x53);
+	bool pressedE = GetKeyState(0x45);
+	bool pressedV = GetKeyState(0x56);
+	bool pressedSpace = GetKeyState(0x20);
+	bool pressedLeft = GetKeyState(0x25);
+	bool pressedRight = GetKeyState(0x27);
+	bool pressedShift = GetKeyState(0x10);
+	bool pressedCtrl = GetKeyState(0x11);
+	bool pressedAlt = GetKeyState(0x12);
+
 	if (isPathInputModeEnabled)
 	{
-		if (GetKeyState(0x53))
-			userChar = 's';
+		if (pressedCtrl && pressedV)
+		{
+			HANDLE clip;
+			// Check if we can open it
+			if (OpenClipboard(NULL)) {
+				clip = GetClipboardData(CF_TEXT);
+				CloseClipboard();
+				userPath = (char *)clip;
+			}
+		}
+		// TODO: Write letters
+		// if (pressedS)
+			// userChar = 's';
 	}
 	else
 	{
-		bool pressedS = GetKeyState(0x53);
-		bool pressedE = GetKeyState(0x45);
-		bool pressedV = GetKeyState(0x56);
-		bool pressedSpace = GetKeyState(0x20);
-		bool pressedLeft = GetKeyState(0x25);
-		bool pressedRight = GetKeyState(0x27);
-		bool pressedShift = GetKeyState(0x10);
-		bool pressedCtrl = GetKeyState(0x11);
-		bool pressedAlt = GetKeyState(0x12);
-
 		if (!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo)
 		{
 			videoName = strhelp::createVideoName();
@@ -195,11 +206,11 @@ int main(int argc, char* argv[])
 			isPathInputModeEnabled = cvui::checkbox(gui, margin + padding, margin + 7 * padding, "Enable path input mode", &currentMode.pathInput);
 			if (isPathInputModeEnabled)
 			{
-				if (userChar != 0)
-				{
-					userPath += userChar;
-					userChar = 0;
-				}
+				//if (userChar != 0)
+				//{
+				//	userPath += userChar;
+				//	userChar = 0;
+				//}
 				int status = cvui::iarea(margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding);
 				cvui::rect(gui, margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding, 0x4d4d4d, 0x373737);
 				const char *userPathC = userPath.c_str();
