@@ -157,6 +157,16 @@ void modeUpdate(int requestedFPS)
 					player::playerSignal = PLAYER_NONE;
 				modeString = "Running/Stopped video";
 			}
+			// Order here is an important thing
+			if (pressedLeft)
+			{
+				player::playerSignal = PLAYER_NEXT_L;
+			}
+			if (pressedRight)
+			{
+				printf("duuupcia\n");
+				player::playerSignal = PLAYER_NEXT_R;
+			}
 			if (pressedCtrl && pressedLeft)
 			{
 				player::playerSignal = PLAYER_BEGIN;
@@ -164,14 +174,6 @@ void modeUpdate(int requestedFPS)
 			if (pressedCtrl && pressedRight)
 			{
 				player::playerSignal = PLAYER_END;
-			}
-			if (pressedLeft)
-			{
-				player::playerSignal = PLAYER_NEXT_L;
-			}
-			if (pressedRight)
-			{
-				player::playerSignal = PLAYER_NEXT_R;
 			}
 			if (pressedShift && pressedLeft)
 			{
@@ -187,6 +189,7 @@ void modeUpdate(int requestedFPS)
 			}
 			if (pressedAlt && pressedRight)
 			{
+				printf("cyyyycunie\n");
 				player::playerSignal = PLAYER_FORWARD;
 			}
 			if (pressedCtrl && pressedShift && pressedLeft)
@@ -289,6 +292,7 @@ int main(int argc, char* argv[])
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
+				printf("%d\n", player::frameNum);
 				player::playerAction(&player::frameNum, player::playerSignal);
 			}
 			else
