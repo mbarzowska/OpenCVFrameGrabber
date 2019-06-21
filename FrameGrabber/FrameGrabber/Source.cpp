@@ -12,7 +12,7 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled;
+/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 
@@ -32,6 +32,8 @@ unsigned long long int frameStep = 1; // current frame step
 double capWidth = 0.0;
 double capHeight = 0.0;
 string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
+int logoX = 0;
+int logoY = 0;
 
 /* Video writing */
 string videoName;
@@ -46,9 +48,20 @@ struct modes
 	bool playVideo; // Start/stop running of video
 	bool pathInput; // Let get the path
 	bool applyLogo;
+	bool moveLogo;
 };
 
-struct modes currentMode = { false, false, false, false, false, false};
+struct modes currentMode = { false, false, false, false, false, false, false };
+
+struct logoMoveDirections
+{
+	bool left;
+	bool up;
+	bool right;
+	bool down;
+};
+
+struct logoMoveDirections moveDirection = { false, false, false, false };
 
 inline void openCamera()
 {
@@ -70,8 +83,10 @@ void modeUpdate(int requestedFPS)
 	bool pressedE = GetKeyState(0x45);
 	bool pressedV = GetKeyState(0x56);
 	bool pressedSpace = GetKeyState(0x20);
-	bool pressedLeft = GetKeyState(0x25);
-	bool pressedRight = GetKeyState(0x27);
+	bool pressedLeftArrow = GetKeyState(0x25);
+	bool pressedUpArrow = GetKeyState(0x26);
+	bool pressedRightArrow = GetKeyState(0x27);
+	bool pressedDownArrow = GetKeyState(0x28);
 	bool pressedShift = GetKeyState(0x10);
 	bool pressedCtrl = GetKeyState(0x11);
 	bool pressedAlt = GetKeyState(0x12);
@@ -117,7 +132,7 @@ void modeUpdate(int requestedFPS)
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
-			modeString = "Stopped";
+			// modeString = "Stopped";
 			outputVideo.release();
 		}
 
@@ -154,13 +169,38 @@ void modeUpdate(int requestedFPS)
 		if (isLogoModeEnabled)
 		{
 			currentMode.applyLogo = true;
-			
+			if (isMoveLogoModeEnabled)
+			{
+				// TODO: obsluga bledu przy przekroczeniu granicy ramki 
+				currentMode.moveLogo = true;
+				if (pressedLeftArrow || moveDirection.left)
+				{
+					logoX -= 1;
+				}
+				else if (pressedUpArrow || moveDirection.up)
+				{
+					logoY -= 1;
+				}
+				else if (pressedRightArrow || moveDirection.right)
+				{
+					logoX += 1;
+				}
+				else if (pressedDownArrow || moveDirection.down)
+				{
+					logoY += 1;
+				}
+			}
+			if (!isMoveLogoModeEnabled)
+			{
+				currentMode.moveLogo = false;
+			}
 		}
 
 		if (!isLogoModeEnabled)
 		{
 			currentMode.applyLogo = false;
 		}
+		
 	}
 	// Clear keyborad
 	SetKeyboardState(clearKeys);
@@ -211,9 +251,9 @@ int main(int argc, char* argv[])
 
 			if (currentMode.applyLogo)
 			{
-				// TODO: moving, spliting into other window holder
+				// TODO: spliting into other window holder
 				double alpha = 0.3;
-				cv::Mat3b roi = frame(cv::Rect(0, 0, logo.cols, logo.rows));
+				cv::Mat3b roi = frame(cv::Rect(logoX, logoY, logo.cols, logo.rows));
 
 				for (int r = 0; r < roi.rows; ++r)
 				{
@@ -269,12 +309,36 @@ int main(int argc, char* argv[])
 			int secondPanelX = margin + padding + menuWidth + 2 * padding;
 			int secondPanelY = margin;
 			int secondPanelWidth = padding + capWidth + padding;
-			int secondPanelHeight = margin + capHeight + 4 * padding;
+			int secondPanelHeight = margin + capHeight + 15 * padding;
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
 			cvui::image(frame);
+			cvui::text("Frame track bar:");
 			// TODO: Zamienic trackbar na wlasciwy, narazie placeholder
 			cvui::trackbar(capWidth, &requestedFPS, 10, 100);
+			
+			if (isLogoModeEnabled) {
+				isMoveLogoModeEnabled = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
+				if (isMoveLogoModeEnabled) {
+					int buttonWidth = 60;
+					int buttonHeight = 30;
+					cvui::beginRow();
+					cvui::beginColumn();
+					cvui::space(buttonHeight);
+					moveDirection.left = cvui::button(buttonWidth, buttonHeight, "LEFT");
+					cvui::endColumn();
+					cvui::beginColumn();
+					moveDirection.up = cvui::button(buttonWidth, buttonHeight, "UP");
+					cvui::space(buttonHeight);
+					moveDirection.down = cvui::button(buttonWidth, buttonHeight, "DOWN");
+					cvui::endColumn();
+					cvui::beginColumn();
+					cvui::space(buttonHeight);
+					moveDirection.right = cvui::button(buttonWidth, buttonHeight, "RIGHT");
+					cvui::endColumn();
+					cvui::endRow();
+				}
+			}
 			cvui::endColumn();
 
 			// TODO: Obsluga drugiego okna, narazie placeholder
