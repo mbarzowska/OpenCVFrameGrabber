@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <conio.h>
 #include "HeaderFiles/StringHelper.h"
+#include "HeaderFiles/Player.h"
 
 using namespace std;
 
@@ -20,17 +21,15 @@ using namespace std;
 /* basic	*/ cv::Mat frame;
 
 /* Helpers and other variables */
+BYTE readKeys[256] = { (BYTE)0 };
 BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
 string path;
 string userPath = ""; // path to file defined by user
 char userChar = 0;
-unsigned long long int frameNum = 0; // frame counter
-unsigned long long int frameMin = 0; // min frame number
-unsigned long long int frameMax = 0; // max frame number
-unsigned long long int frameStep = 1; // current frame step
-double capWidth = 0.0;
-double capHeight = 0.0;
+string windowResult = "End result";
+double capWidth = 0.;
+double capHeight = 0.;
 
 /* Video writing */
 string videoName;
@@ -64,15 +63,27 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
-	bool pressedS = GetKeyState(0x53);
-	bool pressedE = GetKeyState(0x45);
-	bool pressedV = GetKeyState(0x56);
-	bool pressedSpace = GetKeyState(0x20);
-	bool pressedLeft = GetKeyState(0x25);
-	bool pressedRight = GetKeyState(0x27);
-	bool pressedShift = GetKeyState(0x10);
-	bool pressedCtrl = GetKeyState(0x11);
-	bool pressedAlt = GetKeyState(0x12);
+	GetKeyboardState(readKeys);
+
+	//bool pressedS = GetKeyState(0x53);
+	//bool pressedE = GetKeyState(0x45);
+	//bool pressedV = GetKeyState(0x56);
+	//bool pressedSpace = GetKeyState(0x20);
+	//bool pressedLeft = GetKeyState(0x25);
+	//bool pressedRight = GetKeyState(0x27);
+	//bool pressedShift = GetKeyState(0x10);
+	//bool pressedCtrl = GetKeyState(0x11);
+	//bool pressedAlt = GetKeyState(0x12);
+
+	bool pressedS = readKeys[0x53];
+	bool pressedE = readKeys[0x45];
+	bool pressedV = readKeys[0x56];
+	bool pressedSpace = readKeys[0x20];
+	bool pressedLeft = readKeys[0x25];
+	bool pressedRight = readKeys[0x27];
+	bool pressedShift = readKeys[VK_SHIFT];
+	bool pressedCtrl = readKeys[VK_CONTROL];
+	bool pressedAlt = readKeys[VK_MENU];
 
 	if (isPathInputModeEnabled)
 	{
@@ -128,8 +139,8 @@ void modeUpdate(int requestedFPS)
 				outputVideo.release();
 				cap.open(userPath);
 				// Set max and starting frames
-				frameNum = 0;
-				frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+				player::frameNum = 0;
+				player::frameMax = static_cast<long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
 				modeString = "Stopped recording if there was any, open video mode.";
 			}
 			else
@@ -139,10 +150,64 @@ void modeUpdate(int requestedFPS)
 				modeString = "Stopped video mode, started recording mode.";
 			}
 		}
-		if (pressedSpace && currentMode.modeVideo)
+		if (currentMode.modeVideo) /* 20 is vk code for SPACE */
 		{
-			currentMode.playVideo = !currentMode.playVideo;
-			modeString = "Running/Stopped video";
+			// Restore the signal after loop
+			if (currentMode.playVideo)
+				player::playerSignal = PLAYER_STANDARD;
+			else
+				player::playerSignal = PLAYER_NONE;
+
+			if (pressedSpace)
+			{
+				currentMode.playVideo = !currentMode.playVideo;
+				if (currentMode.playVideo)
+					player::playerSignal = PLAYER_STANDARD;
+				else
+					player::playerSignal = PLAYER_NONE;
+				modeString = "Running/Stopped video";
+			}
+			// Order here is an important thing
+			if (pressedLeft)
+			{
+				player::playerSignal = PLAYER_NEXT_L;
+			}
+			if (pressedRight)
+			{
+				player::playerSignal = PLAYER_NEXT_R;
+			}
+			if (pressedCtrl && pressedLeft)
+			{
+				player::playerSignal = PLAYER_BEGIN;
+			}
+			if (pressedCtrl && pressedRight)
+			{
+				player::playerSignal = PLAYER_END;
+			}
+			if (pressedShift && pressedLeft)
+			{
+				player::playerSignal = PLAYER_KEY_L;
+			}
+			if (pressedShift && pressedRight)
+			{
+				player::playerSignal = PLAYER_KEY_R;
+			}
+			if (pressedAlt && pressedLeft)
+			{
+				player::playerSignal = PLAYER_BACKWARD;
+			}
+			if (pressedAlt && pressedRight)
+			{
+				player::playerSignal = PLAYER_FORWARD;
+			}
+			if (pressedCtrl && pressedShift && pressedLeft)
+			{
+				player::playerSignal = PLAYER_SCENE_L;
+			}
+			if (pressedCtrl && pressedShift && pressedRight)
+			{
+				player::playerSignal = PLAYER_SCENE_R;
+			}
 		}
 	}
 	// Clear keyborad
@@ -181,7 +246,7 @@ int main(int argc, char* argv[])
 		{
 			if (currentMode.modeVideo)
 			{
-				cap.set(cv::CAP_PROP_POS_FRAMES, frameNum);
+				cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
 				cap >> frame;
 			}
 			else
@@ -250,21 +315,7 @@ int main(int argc, char* argv[])
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
-				if (currentMode.playVideo && currentMode.recording)
-				{
-					outputVideo.write(frame);
-				}
-				/// TODO: Add handle of playing the film
-				if (currentMode.playVideo && (frameNum + frameStep) < frameMax)
-				{
-					frameNum += frameStep;
-				} 
-				else if (currentMode.playVideo && (frameNum + frameStep) >= frameMax)
-				{
-					// replaying
-					frameNum = 0;
-					cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-				}
+				player::playerAction(&player::frameNum, player::playerSignal);
 			}
 			else
 			{
@@ -280,6 +331,7 @@ int main(int argc, char* argv[])
 		catch (cv::Exception &e)
 		{
 			exit(cap);
+			getchar();
 			return -1;
 		}
 	}

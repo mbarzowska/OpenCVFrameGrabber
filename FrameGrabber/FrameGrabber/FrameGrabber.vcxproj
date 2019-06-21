@@ -143,6 +143,7 @@
   <ItemGroup>
     <ClInclude Include="HeaderFiles\cvui.h" />
     <ClInclude Include="HeaderFiles\EnhancedWindow.h" />
+    <ClInclude Include="HeaderFiles\Player.h" />
     <ClInclude Include="StringHelper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
