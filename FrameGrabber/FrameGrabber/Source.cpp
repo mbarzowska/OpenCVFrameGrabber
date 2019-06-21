@@ -12,7 +12,7 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled;
+/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 
@@ -31,6 +31,7 @@ unsigned long long int frameMax = 0; // max frame number
 unsigned long long int frameStep = 1; // current frame step
 double capWidth = 0.0;
 double capHeight = 0.0;
+string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
 
 /* Video writing */
 string videoName;
@@ -44,9 +45,10 @@ struct modes
 	bool modeVideo;	// Open video mode, exit the mode pressing V
 	bool playVideo; // Start/stop running of video
 	bool pathInput; // Let get the path
+	bool applyLogo;
 };
 
-struct modes currentMode = { false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false};
 
 inline void openCamera()
 {
@@ -100,6 +102,7 @@ void modeUpdate(int requestedFPS)
 			outputVideo.open(outputPath, codec, requestedFPS, size);
 			modeString = "New file opened";
 		}
+
 		if ((pressedS || isRecordingModeEnabled && !currentMode.modeVideo) ||
 			(isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
 		{
@@ -108,6 +111,7 @@ void modeUpdate(int requestedFPS)
 			isRecordingModeEnabled = true;
 			modeString = "To video file";
 		}
+
 		if ((pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) ||
 			(!isRecordingModeEnabled && !currentMode.playVideo)) 
 		{
@@ -116,6 +120,7 @@ void modeUpdate(int requestedFPS)
 			modeString = "Stopped";
 			outputVideo.release();
 		}
+
 		if (pressedV)
 		{
 			currentMode.recording = false;
@@ -139,10 +144,22 @@ void modeUpdate(int requestedFPS)
 				modeString = "Stopped video mode, started recording mode.";
 			}
 		}
+
 		if (pressedSpace && currentMode.modeVideo)
 		{
 			currentMode.playVideo = !currentMode.playVideo;
 			modeString = "Running/Stopped video";
+		}
+
+		if (isLogoModeEnabled)
+		{
+			currentMode.applyLogo = true;
+			
+		}
+
+		if (!isLogoModeEnabled)
+		{
+			currentMode.applyLogo = false;
 		}
 	}
 	// Clear keyborad
@@ -175,6 +192,9 @@ int main(int argc, char* argv[])
 	cv::Mat gui = cv::Mat(cv::Size(cvUIWindowWidth, cvUIWindowHeight), CV_8UC3);
 	gui = cv::Scalar(55, 55, 55);
 
+	cv::Mat4b logo = cv::imread(logoPath, cv::IMREAD_UNCHANGED);
+	resize(logo, logo, cv::Size(64, 64));
+
 	while (cv::waitKey(15) != char(27))
 	{
 		try 
@@ -187,6 +207,29 @@ int main(int argc, char* argv[])
 			else
 			{
 				cap >> frame;
+			}
+
+			if (currentMode.applyLogo)
+			{
+				// TODO: moving, spliting into other window holder
+				double alpha = 0.3;
+				cv::Mat3b roi = frame(cv::Rect(0, 0, logo.cols, logo.rows));
+
+				for (int r = 0; r < roi.rows; ++r)
+				{
+					for (int c = 0; c < roi.cols; ++c)
+					{
+						const cv::Vec4b& vf = logo(r, c);
+						if (vf[3] > 0) // alpha channel > 0
+						{
+							// Blending
+							cv::Vec3b& vb = roi(r, c);
+							vb[0] = alpha * vf[0] + (1 - alpha) * vb[0];
+							vb[1] = alpha * vf[1] + (1 - alpha) * vb[1];
+							vb[2] = alpha * vf[2] + (1 - alpha) * vb[2];
+						}
+					}
+				}
 			}
 
 			/* Set cvUI window */
@@ -220,6 +263,7 @@ int main(int argc, char* argv[])
 				case cvui::OUT:    cvui::text("Mouse is: OUT"); break;
 				}
 			}
+			isLogoModeEnabled = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			cvui::endColumn();
 
 			int secondPanelX = margin + padding + menuWidth + 2 * padding;
@@ -246,6 +290,8 @@ int main(int argc, char* argv[])
 			cvui::imshow(CVUI_WINDOW_NAME, gui);
 
 			modeUpdate(requestedFPS);
+
+			
 
 			// Some video is opened right now
 			if (currentMode.modeVideo)
@@ -279,6 +325,7 @@ int main(int argc, char* argv[])
 		}
 		catch (cv::Exception &e)
 		{
+			_getch();
 			exit(cap);
 			return -1;
 		}
