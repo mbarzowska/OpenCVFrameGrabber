@@ -23,6 +23,7 @@ using namespace std;
 /* stamps	*/ cv::Mat frameToControlMode, frameToSave;
 
 /* Helpers and other variables */
+BYTE readKeys[256] = { (BYTE)0 };
 BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
 cv::Scalar red = cv::Scalar(0, 0, 255);
@@ -65,15 +66,27 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
-	bool pressedS = GetKeyState(0x53);
-	bool pressedE = GetKeyState(0x45);
-	bool pressedV = GetKeyState(0x56);
-	bool pressedSpace = GetKeyState(0x20);
-	bool pressedLeft = GetKeyState(0x25);
-	bool pressedRight = GetKeyState(0x27);
-	bool pressedShift = GetKeyState(0x10);
-	bool pressedCtrl = GetKeyState(0x11);
-	bool pressedAlt = GetKeyState(0x12);
+	GetKeyboardState(readKeys);
+
+	//bool pressedS = GetKeyState(0x53);
+	//bool pressedE = GetKeyState(0x45);
+	//bool pressedV = GetKeyState(0x56);
+	//bool pressedSpace = GetKeyState(0x20);
+	//bool pressedLeft = GetKeyState(0x25);
+	//bool pressedRight = GetKeyState(0x27);
+	//bool pressedShift = GetKeyState(0x10);
+	//bool pressedCtrl = GetKeyState(0x11);
+	//bool pressedAlt = GetKeyState(0x12);
+
+	bool pressedS = readKeys[0x53];
+	bool pressedE = readKeys[0x45];
+	bool pressedV = readKeys[0x56];
+	bool pressedSpace = readKeys[0x20];
+	bool pressedLeft = readKeys[0x25];
+	bool pressedRight = readKeys[0x27];
+	bool pressedShift = readKeys[VK_SHIFT];
+	bool pressedCtrl = readKeys[VK_CONTROL];
+	bool pressedAlt = readKeys[VK_MENU];
 
 	if (isPathInputModeEnabled)
 	{
@@ -164,7 +177,6 @@ void modeUpdate(int requestedFPS)
 			}
 			if (pressedRight)
 			{
-				printf("duuupcia\n");
 				player::playerSignal = PLAYER_NEXT_R;
 			}
 			if (pressedCtrl && pressedLeft)
@@ -189,7 +201,6 @@ void modeUpdate(int requestedFPS)
 			}
 			if (pressedAlt && pressedRight)
 			{
-				printf("cyyyycunie\n");
 				player::playerSignal = PLAYER_FORWARD;
 			}
 			if (pressedCtrl && pressedShift && pressedLeft)
@@ -315,6 +326,7 @@ int main(int argc, char* argv[])
 		catch (cv::Exception &e)
 		{
 			exit(cap);
+			getchar();
 			return -1;
 		}
 	}
