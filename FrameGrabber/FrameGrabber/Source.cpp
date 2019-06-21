@@ -1,7 +1,7 @@
-#include<opencv2/highgui/highgui.hpp>
-#include<opencv2/imgproc/imgproc.hpp>
-#include<iostream>
-#include<windows.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <iostream>
+#include <windows.h>
 #include <conio.h>
 #include "HeaderFiles/StringHelper.h"
 #include "HeaderFiles/Player.h"
@@ -10,23 +10,20 @@ using namespace std;
 
 #define CVUI_IMPLEMENTATION
 #include "HeaderFiles/cvui.h"
-#define WINDOW_NAME "Frame grabber"
+#define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
 /* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
-/* common		*/ int margin = 20;
-/* common		*/ int padding = 20;
+/* common		*/ int margin = 20, padding = 20;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
-/* stamps	*/ cv::Mat frameToControlMode, frameToSave;
 
 /* Helpers and other variables */
 BYTE readKeys[256] = { (BYTE)0 };
 BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
-cv::Scalar red = cv::Scalar(0, 0, 255);
 string path;
 string userPath = ""; // path to file defined by user
 char userChar = 0;
@@ -48,7 +45,7 @@ struct modes
 	bool pathInput; // Let get the path
 };
 
-struct modes currentMode = { false, false, false, false };
+struct modes currentMode = { false, false, false, false, false };
 
 inline void openCamera()
 {
@@ -92,10 +89,8 @@ void modeUpdate(int requestedFPS)
 	{
 		if (pressedCtrl && pressedV)
 		{
-			HANDLE clip;
-			// Check if we can open it
 			if (OpenClipboard(NULL)) {
-				clip = GetClipboardData(CF_TEXT);
+				HANDLE clip = GetClipboardData(CF_TEXT);
 				CloseClipboard();
 				userPath = (char *)clip;
 			}
@@ -106,7 +101,8 @@ void modeUpdate(int requestedFPS)
 	}
 	else
 	{
-		if (!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo)
+		if ((!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo) ||
+			(!outputVideo.isOpened() && isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
 		{
 			videoName = strhelp::createVideoName();
 			const auto outputPath = path + videoName;
@@ -115,21 +111,23 @@ void modeUpdate(int requestedFPS)
 			outputVideo.open(outputPath, codec, requestedFPS, size);
 			modeString = "New file opened";
 		}
-		if (pressedS || isRecordingModeEnabled && !currentMode.modeVideo) /* 53 is vk code for S */
+		if ((pressedS || isRecordingModeEnabled && !currentMode.modeVideo) ||
+			(isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
 		{
 			currentMode.recording = true;
 			currentMode.stop = false;
 			isRecordingModeEnabled = true;
-			modeString = "Camera to video file";
+			modeString = "To video file";
 		}
-		if (pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) /* 45 is vk code for E */
+		if ((pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) ||
+			(!isRecordingModeEnabled && !currentMode.playVideo)) 
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
 			modeString = "Stopped";
 			outputVideo.release();
 		}
-		if (pressedV) /* 56 is vk code for V */
+		if (pressedV)
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
@@ -139,8 +137,7 @@ void modeUpdate(int requestedFPS)
 			{
 				// cap.release();
 				outputVideo.release();
-				// TODO: Specify the name of file somehow
-				cap.open("C:\\Studies\\OpenCVPROJ\\OpenCVFrameGrabber\\FrameGrabber\\FrameGrabber\\Video\\20_6_2019_21h27m44s.avi");
+				cap.open(userPath);
 				// Set max and starting frames
 				player::frameNum = 0;
 				player::frameMax = static_cast<long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
@@ -235,12 +232,9 @@ int main(int argc, char* argv[])
 
 	openCamera();
 
-	/* Declare important windows */
-	cv::namedWindow(windowResult, cv::WINDOW_AUTOSIZE);
-
 	/* Initialize cvUI menu window */
 	int menuWidth = 200;
-	cvui::init(WINDOW_NAME);
+	cvui::init(CVUI_WINDOW_NAME);
 	int cvUIWindowWidth = margin + padding + menuWidth + 3 * padding + capWidth + 3 * padding + capWidth + padding + margin;
 	int cvUIWindowHeight = 700;
 	cv::Mat gui = cv::Mat(cv::Size(cvUIWindowWidth, cvUIWindowHeight), CV_8UC3);
@@ -258,16 +252,20 @@ int main(int argc, char* argv[])
 			else
 			{
 				cap >> frame;
-				frame.copyTo(frameToSave);
 			}
 
 			/* Set cvUI window */
-			cvui::rect(gui, margin, margin, padding + menuWidth + padding, cvUIWindowHeight - 2 * margin, 0x454545, 0x454545);
-			cvui::printf(gui, margin + padding, margin + padding, "Menu");
-			isRecordingModeEnabled = cvui::checkbox(gui, margin + padding, margin + 2 * padding, "Record straight to video file", &currentMode.recording);
-			cvui::printf(gui, margin + 2 * padding, margin + 3 * padding, "Set FPS:");
-			cvui::trackbar(gui, margin + 2 * padding, margin + 4 * padding, menuWidth - padding, &requestedFPS, 10, 100, 1);
-			isPathInputModeEnabled = cvui::checkbox(gui, margin + padding, margin + 7 * padding, "Enable path input mode", &currentMode.pathInput);
+			int firstPanelX = margin;
+			int firstPanelY = margin;
+			int firstPanelWidth = padding + menuWidth + padding;
+			int firstPanelHeight = cvUIWindowHeight - 2 * margin;
+			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, menuWidth, firstPanelHeight, padding);
+			cvui::text("Menu");
+			isRecordingModeEnabled = cvui::checkbox("Record straight to video file", &currentMode.recording);
+			cvui::text("    Set FPS:");
+			cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
+			isPathInputModeEnabled = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
 			if (isPathInputModeEnabled)
 			{
 				//if (userChar != 0)
@@ -275,53 +273,60 @@ int main(int argc, char* argv[])
 				//	userPath += userChar;
 				//	userChar = 0;
 				//}
-				int status = cvui::iarea(margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding);
-				cvui::rect(gui, margin + 2 * padding, margin + 8 * padding, menuWidth - padding, padding, 0x4d4d4d, 0x373737);
+				int status = cvui::iarea(firstPanelX + padding, margin + 10.5 * padding, menuWidth, padding);
+				cvui::rect(gui, firstPanelX + padding, margin + 10.5 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
 				const char *userPathC = userPath.c_str();
-				cvui::printf(gui, margin + 2 * padding, margin + 8 * padding, userPathC);
+				cvui::text(userPathC);
 				// TODO: get rid of it, helper only
 				switch (status) {
 				case cvui::CLICK:  std::cout << "Clicked!" << std::endl; break;
-				case cvui::DOWN:   cvui::printf(gui, margin + padding, margin + 9 * padding, "Mouse is: DOWN"); break;
-				case cvui::OVER:   cvui::printf(gui, margin + padding, margin + 9 * padding, "Mouse is: OVER"); break;
-				case cvui::OUT:    cvui::printf(gui, margin + padding, margin + 9 * padding, "Mouse is: OUT"); break;
+				case cvui::DOWN:   cvui::text("Mouse is: DOWN"); break;
+				case cvui::OVER:   cvui::text("Mouse is: OVER"); break;
+				case cvui::OUT:    cvui::text("Mouse is: OUT"); break;
 				}
 			}
+			cvui::endColumn();
 
-			cvui::rect(gui, margin + padding + menuWidth + 2 * padding, margin, padding + capWidth + padding, margin + capHeight + 4 * padding, 0x454545, 0x454545);
-			cvui::image(gui, margin + padding + menuWidth + 3 * padding, margin + padding, frame);
-			cvui::trackbar(gui, margin + padding + menuWidth + 3 * padding, margin + padding + capHeight + padding, capWidth, &requestedFPS, 10, 100, 1);
+			int secondPanelX = margin + padding + menuWidth + 2 * padding;
+			int secondPanelY = margin;
+			int secondPanelWidth = padding + capWidth + padding;
+			int secondPanelHeight = margin + capHeight + 4 * padding;
+			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
+			cvui::image(frame);
+			// TODO: Zamienic trackbar na wlasciwy, narazie placeholder
+			cvui::trackbar(capWidth, &requestedFPS, 10, 100);
+			cvui::endColumn();
 
-			//TODO: Obs³uga drugiego okna, narazie placeholder
-			cvui::rect(gui, margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding, margin, padding + capWidth + padding, padding + capHeight + padding, 0x454545, 0x454545);
-			cvui::image(gui, margin + padding + menuWidth + 3 * padding + capWidth + 3 * padding, margin + padding, frame);
-			
-			cvui::imshow(WINDOW_NAME, gui);
+			// TODO: Obsluga drugiego okna, narazie placeholder
+			int thirdPanelX = margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding;
+			int thirdPanelY = margin;
+			int thirdPanelWidth = padding + capWidth + padding;
+			int thirdPanelHeight = padding + capHeight + padding;
+			cvui::rect(gui, thirdPanelX, thirdPanelY, thirdPanelWidth, thirdPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, thirdPanelX + padding, thirdPanelY + padding, capWidth, thirdPanelHeight);
+			cvui::image(frame);
+			cvui::endColumn();
+
+			cvui::imshow(CVUI_WINDOW_NAME, gui);
 
 			modeUpdate(requestedFPS);
 
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
-				printf("%d\n", player::frameNum);
 				player::playerAction(&player::frameNum, player::playerSignal);
 			}
 			else
 			{
 				if (currentMode.recording)
 				{
-					outputVideo.write(frameToSave);
+					outputVideo.write(frame);
 				}
 			}
 
-			frameToSave.copyTo(frameToControlMode);
-
-			/* Describe mode */
-			cv::putText(frameToControlMode, modeString, cv::Point(15, 25), cv::FONT_HERSHEY_PLAIN, 1, red, 1);
-
 			//TODO: Eventually get rid of it
-			/* Show a frame with mode type */
-			cv::imshow(windowResult, frameToControlMode);
+			cout << modeString << endl;
 		}
 		catch (cv::Exception &e)
 		{
