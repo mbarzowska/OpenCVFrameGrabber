@@ -45,10 +45,33 @@ cv::Mat image;
 int buttonWidth = 60;
 int buttonHeight = 30;
 
+/* Image saving */
+vector<int> compression_params;
+
+
 /* Video writing */
 string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
+
+static const char alphanum[] =
+"0123456789"
+"!@#$%^&*"
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz";
+
+int stringLength = sizeof(alphanum) - 1;
+
+string generateRandomString()
+{
+	srand(time(0));
+	std::string str;
+	for (unsigned int i = 0; i < 20; ++i)
+	{
+		str += alphanum[rand() % stringLength];
+	}
+	return str;
+}
 
 struct modes
 {
@@ -255,6 +278,10 @@ int main(int argc, char* argv[])
 	cv::Mat4b logo = cv::imread(logoPath, cv::IMREAD_UNCHANGED);
 	resize(logo, logo, cv::Size(64, 64));
 
+	/* Set compression parameters */
+	compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+	compression_params.push_back(100);
+
 	while (cv::waitKey(15) != char(27))
 	{
 		try
@@ -427,7 +454,14 @@ int main(int argc, char* argv[])
 
 			if (saveToFile)
 			{
-				cout << "Image saving here" << endl;
+				if (isLogoModeEnabled)
+				{
+					cv::imwrite(path + generateRandomString() + ".jpg", frameWithLogo, compression_params);
+				}
+				else
+				{
+					cv::imwrite(path + generateRandomString() + ".jpg", frame, compression_params);
+				}
 			}
 			// Some video is opened right now
 			if (currentMode.modeVideo)
