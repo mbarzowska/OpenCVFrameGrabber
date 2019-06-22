@@ -263,30 +263,14 @@ int main(int argc, char* argv[])
 			}
 			else if (currentMode.loadImage)
 			{
-				cout << "LOAD" << endl;
-				cout << userPath << endl;
 				if (!isImageLoaded)
 				{
 					image = cv::imread(userPath);
-
 					int tmpRatio = image.rows / image.cols;
 
-					if (image.rows <= frame.rows && image.cols <= frame.cols)
+					if (image.rows > frame.rows && image.cols > frame.cols)
 					{
-
-					}
-					else
-					{
-						cout << frame.rows << endl;
-						cout << frame.cols << endl;
-						cout << image.rows << endl;
-						cout << image.cols << endl;
-						cout << tmpRatio << endl;
-						cout << "END" << endl;
-
-						cv::resize(image, image, cv::Size(frame.size()));
-						cout << image.rows << endl;
-						cout << image.cols << endl;
+						cv::resize(image, image, cv::Size(image.cols / tmpRatio,frame.rows));
 					}
 				}
 				frame = image;
