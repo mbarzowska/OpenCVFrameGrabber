@@ -12,8 +12,14 @@ using namespace std;
 #include "HeaderFiles/cvui.h"
 #define CVUI_WINDOW_NAME "Frame grabber"
 
-#define DELAY 10000
 #define KEYBOARD_SIZE 256
+
+#define VK_E 0x45
+#define VK_S 0x53
+#define VK_V 0x56
+#define VK_ALT VK_MENU
+
+#define CHECK_MSB(x) ((x & 0x80) == 0x80)
 
 /* cvUI	related	*/
 /* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled;
@@ -69,7 +75,7 @@ void updateKeys(BYTE *keysOne, BYTE *keysTwo)
 {
 	for (int i = 0; i < KEYBOARD_SIZE; i++)
 	{
-		if (keysOne[i] != 0)
+		if (CHECK_MSB(keysOne[i]))
 			keysTwo[i] = keysOne[i];
 	}
 	return;
@@ -77,46 +83,33 @@ void updateKeys(BYTE *keysOne, BYTE *keysTwo)
 
 void modeUpdate(int requestedFPS)
 {
-	// Trick to get couple of inputs
 	GetKeyboardState(userKeys);
-	//for (int i = 0; i < DELAY; i++)
-	//{
-	//	GetKeyboardState(readKeys);
-	//	updateKeys(readKeys, userKeys);
-	//}
+	// Copy previous iter keys
+	updateKeys(readKeys, userKeys);
 
-	//bool pressedS = GetKeyState(0x53);
-	//bool pressedE = GetKeyState(0x45);
-	//bool pressedV = GetKeyState(0x56);
-	//bool pressedSpace = GetKeyState(0x20);
-	//bool pressedLeft = GetKeyState(0x25);
-	//bool pressedRight = GetKeyState(0x27);
-	//bool pressedShift = GetKeyState(0x10);
-	//bool pressedCtrl = GetKeyState(0x11);
-	//bool pressedAlt = GetKeyState(0x12);
-
-	printf("keyright: %d\n", userKeys[0x27]);
-	printf("keyshift: %d\n", userKeys[VK_SHIFT]);
-
-	bool pressedS = userKeys[0x53];
-	bool pressedE = userKeys[0x45];
-	bool pressedV = userKeys[0x56];
-	bool pressedSpace = userKeys[0x20];
-	bool pressedLeft = userKeys[0x25];
-	bool pressedRight = userKeys[0x27];
-	bool pressedShift = userKeys[VK_SHIFT];
-	bool pressedCtrl = userKeys[VK_CONTROL];
-	bool pressedAlt = userKeys[VK_MENU];
+	cout << "key    v: " << (int)userKeys[VK_V] << "\n";
+	cout << "keyright: " << (int)userKeys[VK_RIGHT] << "\n";
+	cout << "keycontrol: " << (int)userKeys[VK_CONTROL] << "\n";
 
 	if (isPathInputModeEnabled)
 	{
-		if (pressedCtrl && pressedV)
+		if (CHECK_MSB(userKeys[VK_CONTROL]) && CHECK_MSB(userKeys[VK_V]))
 		{
 			if (OpenClipboard(NULL)) {
 				HANDLE clip = GetClipboardData(CF_TEXT);
 				CloseClipboard();
 				userPath = (char *)clip;
 			}
+			userKeys[VK_V] = 0x0;
+			userKeys[VK_CONTROL] = 0x0;
+			readKeys[VK_V] = 0x0;
+			readKeys[VK_CONTROL] = 0x0;
+		}
+		if (CHECK_MSB(userKeys[VK_DELETE]))
+		{
+			userPath = "";
+			userKeys[VK_DELETE] = 0x0;
+			readKeys[VK_DELETE] = 0x0;
 		}
 		// TODO: Write letters
 		// if (pressedS)
@@ -134,23 +127,27 @@ void modeUpdate(int requestedFPS)
 			outputVideo.open(outputPath, codec, requestedFPS, size);
 			modeString = "New file opened";
 		}
-		if ((pressedS || isRecordingModeEnabled && !currentMode.modeVideo) ||
+		if ((CHECK_MSB(userKeys[VK_S]) || isRecordingModeEnabled && !currentMode.modeVideo) ||
 			(isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
 		{
 			currentMode.recording = true;
 			currentMode.stop = false;
 			isRecordingModeEnabled = true;
 			modeString = "To video file";
+			userKeys[VK_S] = 0x0;
+			readKeys[VK_S] = 0x0;
 		}
-		if ((pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) ||
+		if ((CHECK_MSB(userKeys[VK_E]) || !isRecordingModeEnabled && !currentMode.modeVideo) ||
 			(!isRecordingModeEnabled && !currentMode.playVideo)) 
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
 			modeString = "Stopped";
 			outputVideo.release();
+			userKeys[VK_E] = 0x0;
+			readKeys[VK_E] = 0x0;
 		}
-		if (pressedV)
+		if (CHECK_MSB(userKeys[VK_V]))
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
@@ -179,6 +176,8 @@ void modeUpdate(int requestedFPS)
 				openCamera();
 				modeString = "Stopped video mode, started recording mode.";
 			}
+			userKeys[VK_V] = 0x0;
+			readKeys[VK_V] = 0x0;
 		}
 		if (currentMode.modeVideo) /* 20 is vk code for SPACE */
 		{
@@ -188,7 +187,7 @@ void modeUpdate(int requestedFPS)
 			else
 				player::playerSignal = PLAYER_NONE;
 
-			if (pressedSpace)
+			if (CHECK_MSB(userKeys[VK_SPACE]))
 			{
 				currentMode.playVideo = !currentMode.playVideo;
 				if (currentMode.playVideo)
@@ -196,52 +195,96 @@ void modeUpdate(int requestedFPS)
 				else
 					player::playerSignal = PLAYER_NONE;
 				modeString = "Running/Stopped video";
+				userKeys[VK_SPACE] = 0x0;
+				readKeys[VK_SPACE] = 0x0;
 			}
 			// Order here is an important thing
-			if (pressedLeft)
-			{
-				player::playerSignal = PLAYER_NEXT_L;
-			}
-			if (pressedRight)
-			{
-				player::playerSignal = PLAYER_NEXT_R;
-			}
-			if (pressedCtrl && pressedLeft)
-			{
-				player::playerSignal = PLAYER_BEGIN;
-			}
-			if (pressedCtrl && pressedRight)
-			{
-				player::playerSignal = PLAYER_END;
-			}
-			if (pressedShift && pressedLeft)
-			{
-				player::playerSignal = PLAYER_KEY_L;
-			}
-			if (pressedShift && pressedRight)
-			{
-				player::playerSignal = PLAYER_KEY_R;
-			}
-			if (pressedAlt && pressedLeft)
-			{
-				player::playerSignal = PLAYER_BACKWARD;
-			}
-			if (pressedAlt && pressedRight)
-			{
-				player::playerSignal = PLAYER_FORWARD;
-			}
-			if (pressedCtrl && pressedShift && pressedLeft)
+			if (CHECK_MSB(userKeys[VK_CONTROL]) && CHECK_MSB(userKeys[VK_SHIFT]) && CHECK_MSB(userKeys[VK_LEFT]))
 			{
 				player::playerSignal = PLAYER_SCENE_L;
+				userKeys[VK_LEFT] = 0x0;
+				userKeys[VK_SHIFT] = 0x0;
+				userKeys[VK_CONTROL] = 0x0;
+				readKeys[VK_LEFT] = 0x0;
+				readKeys[VK_SHIFT] = 0x0;
+				readKeys[VK_CONTROL] = 0x0;
 			}
-			if (pressedCtrl && pressedShift && pressedRight)
+			if (CHECK_MSB(userKeys[VK_CONTROL]) && CHECK_MSB(userKeys[VK_SHIFT]) && CHECK_MSB(userKeys[VK_RIGHT]))
 			{
 				player::playerSignal = PLAYER_SCENE_R;
+				userKeys[VK_RIGHT] = 0x0;
+				userKeys[VK_SHIFT] = 0x0;
+				userKeys[VK_CONTROL] = 0x0;
+				readKeys[VK_RIGHT] = 0x0;
+				readKeys[VK_SHIFT] = 0x0;
+				readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_CONTROL]) && CHECK_MSB(userKeys[VK_LEFT]))
+			{
+				player::playerSignal = PLAYER_BEGIN;
+				userKeys[VK_LEFT] = 0x0;
+				userKeys[VK_CONTROL] = 0x0;
+				readKeys[VK_LEFT] = 0x0;
+				readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_CONTROL]) && CHECK_MSB(userKeys[VK_RIGHT]))
+			{
+				player::playerSignal = PLAYER_END;
+				userKeys[VK_RIGHT] = 0x0;
+				userKeys[VK_CONTROL] = 0x0;
+				readKeys[VK_RIGHT] = 0x0;
+				readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_SHIFT]) && CHECK_MSB(userKeys[VK_LEFT]))
+			{
+				player::playerSignal = PLAYER_KEY_L;
+				userKeys[VK_LEFT] = 0x0;
+				userKeys[VK_SHIFT] = 0x0;
+				readKeys[VK_LEFT] = 0x0;
+				readKeys[VK_SHIFT] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_SHIFT]) && CHECK_MSB(userKeys[VK_RIGHT]))
+			{
+				player::playerSignal = PLAYER_KEY_R;
+				userKeys[VK_RIGHT] = 0x0;
+				userKeys[VK_SHIFT] = 0x0;
+				readKeys[VK_RIGHT] = 0x0;
+				readKeys[VK_SHIFT] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_ALT]) && CHECK_MSB(userKeys[VK_LEFT]))
+			{
+				player::playerSignal = PLAYER_BACKWARD;
+				userKeys[VK_LEFT] = 0x0;
+				userKeys[VK_MENU] = 0x0;
+				readKeys[VK_LEFT] = 0x0;
+				readKeys[VK_MENU] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_ALT]) && CHECK_MSB(userKeys[VK_RIGHT]))
+			{
+				player::playerSignal = PLAYER_FORWARD;
+				userKeys[VK_RIGHT] = 0x0;
+				userKeys[VK_MENU] = 0x0;
+				readKeys[VK_RIGHT] = 0x0;
+				readKeys[VK_MENU] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_LEFT]))
+			{
+				player::playerSignal = PLAYER_NEXT_L;
+				userKeys[VK_LEFT] = 0x0;
+				readKeys[VK_LEFT] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_RIGHT]))
+			{
+				player::playerSignal = PLAYER_NEXT_R;
+				userKeys[VK_RIGHT] = 0x0;
+				readKeys[VK_RIGHT] = 0x0;
 			}
 		}
 	}
-	// Clear keyborad
+	// Clear KeyboardState
 	SetKeyboardState(clearKeys);
+	// Copy current pressed to next state used later at the begining
+	updateKeys(userKeys, readKeys);
 }
 
 /* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
