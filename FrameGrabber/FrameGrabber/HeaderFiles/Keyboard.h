@@ -27,6 +27,7 @@ namespace keyboard
 	BYTE readKeys[KEYBOARD_SIZE] = { (BYTE)0 };
 	BYTE userKeys[KEYBOARD_SIZE] = { (BYTE)0 };
 	BYTE clearKeys[KEYBOARD_SIZE] = { (BYTE)0 }; // All are 0's for clearing keyboard input
+	std::string currentCommand = "";
 
 	void initKeyboard(BYTE *_userKeys);
 
@@ -34,11 +35,13 @@ namespace keyboard
 
 	void updateKeys(BYTE *keysOne, BYTE *keysTwo);
 
-	void clearCommands(BYTE *_userKeys);
+	void updateCommandString(BYTE *_userKeys, std::string& _cmdStr);
 
-	void inputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, bool *_isPathInputModeEnabled);
+	void clearCommands(BYTE *_readKeys, BYTE *_userKeys);
 
-	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, std::string& _userPath);
+	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, bool *_isPathInputModeEnabled);
+
+	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, std::string& _userPath);
 
 	void recordingModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 							   bool *_isRecordingModeEnabled, std::string& _modeString, \
@@ -82,10 +85,60 @@ namespace keyboard
 		return;
 	}
 
-	void clearCommands(BYTE *_userKeys)
+	void updateCommandString(BYTE *_userKeys, std::string& _cmdStr)
+	{
+		_cmdStr = "";
+		if (CHECK_MSB(_userKeys[VK_SHIFT]))
+			_cmdStr += "SHIFT + ";
+		if (CHECK_MSB(_userKeys[VK_CONTROL]))
+			_cmdStr += "CTRL + ";
+		if (CHECK_MSB(_userKeys[VK_ALT]))
+			_cmdStr += "ALT + ";
+		if (CHECK_MSB(_userKeys[VK_LEFT]))
+			_cmdStr += "LEFT + ";
+		if (CHECK_MSB(_userKeys[VK_RIGHT]))
+			_cmdStr += "RIGHT + ";
+		if (CHECK_MSB(_userKeys[VK_UP]))
+			_cmdStr += "UP + ";
+		if (CHECK_MSB(_userKeys[VK_DOWN]))
+			_cmdStr += "DOWN + ";
+		if (CHECK_MSB(_userKeys[VK_SPACE]))
+			_cmdStr += "SPACE + ";
+		if (CHECK_MSB(_userKeys[VK_DELETE]))
+			_cmdStr += "DELETE + ";
+		if (CHECK_MSB(_userKeys[VK_E]))
+			_cmdStr += "E + ";
+		if (CHECK_MSB(_userKeys[VK_S]))
+			_cmdStr += "S + ";
+		if (CHECK_MSB(_userKeys[VK_V]))
+			_cmdStr += "V + ";
+		if (CHECK_MSB(_userKeys[VK_P]))
+			_cmdStr += "P + ";
+		if (CHECK_MSB(_userKeys[VK_Q]))
+			_cmdStr += "Q + ";
+		// Strip last three
+		_cmdStr = _cmdStr.substr(0, _cmdStr.size() - 3);
+		return;
+	}
+
+	void clearCommands(BYTE *_readKeys, BYTE *_userKeys)
 	{
 		if (CHECK_MSB(_userKeys[VK_Q]))
 		{
+			_readKeys[VK_E] = 0x0;
+			_readKeys[VK_S] = 0x0;
+			_readKeys[VK_V] = 0x0;
+			_readKeys[VK_P] = 0x0;
+			_readKeys[VK_Q] = 0x0;
+			_readKeys[VK_SPACE] = 0x0;
+			_readKeys[VK_DELETE] = 0x0;
+			_readKeys[VK_LEFT] = 0x0;
+			_readKeys[VK_RIGHT] = 0x0;
+			_readKeys[VK_UP] = 0x0;
+			_readKeys[VK_DOWN] = 0x0;
+			_readKeys[VK_CONTROL] = 0x0;
+			_readKeys[VK_SHIFT] = 0x0;
+			_readKeys[VK_ALT] = 0x0;
 			_userKeys[VK_E] = 0x0;
 			_userKeys[VK_S] = 0x0;
 			_userKeys[VK_V] = 0x0;
@@ -95,6 +148,8 @@ namespace keyboard
 			_userKeys[VK_DELETE] = 0x0;
 			_userKeys[VK_LEFT] = 0x0;
 			_userKeys[VK_RIGHT] = 0x0;
+			_userKeys[VK_UP] = 0x0;
+			_userKeys[VK_DOWN] = 0x0;
 			_userKeys[VK_CONTROL] = 0x0;
 			_userKeys[VK_SHIFT] = 0x0;
 			_userKeys[VK_ALT] = 0x0;
@@ -109,6 +164,7 @@ namespace keyboard
 			*_isPathInputModeEnabled = !(*_isPathInputModeEnabled);
 			_currentMode->pathInput = !(_currentMode->pathInput);
 			_userKeys[VK_P] = 0x0;
+			_readKeys[VK_P] = 0x0;
 		}
 		return;
 	}
