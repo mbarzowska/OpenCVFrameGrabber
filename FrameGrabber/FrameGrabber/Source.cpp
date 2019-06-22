@@ -492,7 +492,11 @@ int main(int argc, char* argv[])
 				createFrameGrabbingFolderPath = true;
 			}
 
-			if (isFrameGrabbingModeEnabled)
+			// TODO wiadomosc, obostrzenia i porzadek
+			// TODO jesli video nie jest odtwarzane, wyswietl wiadomosc
+			// TODO a jesli od 1 klatki? start zapisu video do pliku razem z zadaniem odtworzenia? 
+			if (!currentMode.modeVideo && isFrameGrabbingModeEnabled ||
+				currentMode.modeVideo && currentMode.playVideo && isFrameGrabbingModeEnabled)
 			{
 				if (createFrameGrabbingFolderPath)
 				{
