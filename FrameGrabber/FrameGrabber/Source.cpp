@@ -134,7 +134,7 @@ void modeUpdate(int requestedFPS)
 		}
 
 		if ((pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) ||
-			(!isRecordingModeEnabled && !currentMode.playVideo)) 
+			(!isRecordingModeEnabled && !currentMode.playVideo))
 		{
 			currentMode.recording = false;
 			currentMode.stop = true;
@@ -206,7 +206,7 @@ void modeUpdate(int requestedFPS)
 			currentMode.applyLogo = false;
 			currentMode.moveLogo = false;
 		}
-		
+
 	}
 	// Clear keyborad
 	SetKeyboardState(clearKeys);
@@ -219,7 +219,7 @@ void exit(cv::VideoCapture obj)
 	cv::destroyAllWindows();
 }
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	//TODO: find more elegant way to determine path
 	string argvStr(argv[0]);
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
 
 	while (cv::waitKey(15) != char(27))
 	{
-		try 
+		try
 		{
 			if (currentMode.modeVideo)
 			{
@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
 			}
 
 			frame.copyTo(frameWithLogo);
-			
+
 			if (currentMode.applyLogo)
 			{
 				try {
@@ -362,7 +362,6 @@ int main(int argc, char* argv[])
 					cvui::beginRow();
 					moveDirection.left = cvui::button(buttonWidth, buttonHeight, "LEFT");
 					moveDirection.right = cvui::button(buttonWidth, buttonHeight, "RIGHT");
-					cvui::space(buttonWidth);
 					moveDirection.up = cvui::button(buttonWidth, buttonHeight, "UP");
 					moveDirection.down = cvui::button(buttonWidth, buttonHeight, "DOWN");
 					cvui::endRow();
@@ -390,7 +389,7 @@ int main(int argc, char* argv[])
 				if (currentMode.playVideo && (frameNum + frameStep) < frameMax)
 				{
 					frameNum += frameStep;
-				} 
+				}
 				else if (currentMode.playVideo && (frameNum + frameStep) >= frameMax)
 				{
 					// replaying
