@@ -12,11 +12,11 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled;
+/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled, isImageModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
-/* */ bool isLogoMovingMessedUp;
+/* */ bool isLogoMovingMessedUp, isImageLoaded;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
@@ -40,6 +40,7 @@ cv::Mat frameWithLogo;
 double alpha = 0.3;
 cv::Mat3b roi;
 bool restore; // 349
+cv::Mat image;
 
 /* Video writing */
 string videoName;
@@ -55,9 +56,10 @@ struct modes
 	bool pathInput; // Let get the path
 	bool applyLogo;
 	bool moveLogo;
+	bool loadImage;
 };
 
-struct modes currentMode = { false, false, false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false, false, false };
 
 struct logoMoveDirections
 {
@@ -207,6 +209,15 @@ void modeUpdate(int requestedFPS)
 			currentMode.moveLogo = false;
 		}
 
+		if (isImageModeEnabled)
+		{
+			currentMode.loadImage = true;
+		}
+
+		if (!isImageModeEnabled)
+		{
+			currentMode.loadImage = false;
+		}
 	}
 	// Clear keyborad
 	SetKeyboardState(clearKeys);
@@ -249,6 +260,36 @@ int main(int argc, char* argv[])
 			{
 				cap.set(cv::CAP_PROP_POS_FRAMES, frameNum);
 				cap >> frame;
+			}
+			else if (currentMode.loadImage)
+			{
+				cout << "LOAD" << endl;
+				cout << userPath << endl;
+				if (!isImageLoaded)
+				{
+					image = cv::imread(userPath);
+
+					int tmpRatio = image.rows / image.cols;
+
+					if (image.rows <= frame.rows && image.cols <= frame.cols)
+					{
+
+					}
+					else
+					{
+						cout << frame.rows << endl;
+						cout << frame.cols << endl;
+						cout << image.rows << endl;
+						cout << image.cols << endl;
+						cout << tmpRatio << endl;
+						cout << "END" << endl;
+
+						cv::resize(image, image, cv::Size(frame.size()));
+						cout << image.rows << endl;
+						cout << image.cols << endl;
+					}
+				}
+				frame = image;
 			}
 			else
 			{
@@ -328,6 +369,7 @@ int main(int argc, char* argv[])
 				}
 			}
 			isLogoModeEnabled = cvui::checkbox("Put logo on", &currentMode.applyLogo);
+			isImageModeEnabled = cvui::checkbox("Show image", &currentMode.loadImage);
 			cvui::endColumn();
 
 			int firstPanelX = margin + padding + menuWidth + 2 * padding;
@@ -337,9 +379,12 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight, padding);
 			cvui::image(frame);
-			cvui::text("Frame track bar:");
 			// TODO: Zamienic trackbar na wlasciwy, narazie placeholder
-			cvui::trackbar(capWidth, &requestedFPS, 10, 100);
+			if (!isImageModeEnabled)
+			{
+				cvui::text("Frame track bar:");
+				cvui::trackbar(capWidth, &requestedFPS, 10, 100);
+			}
 			cvui::endColumn();
 
 			// TODO: Pe³na obsluga drugiego okna
