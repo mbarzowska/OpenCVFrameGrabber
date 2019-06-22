@@ -15,6 +15,8 @@ using namespace std;
 /* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
+/* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
+/* */ bool isSecondPanelAlertNeeded;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
@@ -253,32 +255,41 @@ int main(int argc, char* argv[])
 			{
 				// TODO: spliting into other window holder
 				double alpha = 0.3;
-				cv::Mat3b roi = frame(cv::Rect(logoX, logoY, logo.cols, logo.rows));
-
-				for (int r = 0; r < roi.rows; ++r)
-				{
-					for (int c = 0; c < roi.cols; ++c)
+				cv::Mat3b roi;
+				try {
+					roi = frame(cv::Rect(logoX, logoY, logo.cols, logo.rows));
+					for (int r = 0; r < roi.rows; ++r)
 					{
-						const cv::Vec4b& vf = logo(r, c);
-						if (vf[3] > 0) // alpha channel > 0
+						for (int c = 0; c < roi.cols; ++c)
 						{
-							// Blending
-							cv::Vec3b& vb = roi(r, c);
-							vb[0] = alpha * vf[0] + (1 - alpha) * vb[0];
-							vb[1] = alpha * vf[1] + (1 - alpha) * vb[1];
-							vb[2] = alpha * vf[2] + (1 - alpha) * vb[2];
+							const cv::Vec4b& vf = logo(r, c);
+							if (vf[3] > 0) // alpha channel > 0
+							{
+								// Blending
+								cv::Vec3b& vb = roi(r, c);
+								vb[0] = alpha * vf[0] + (1 - alpha) * vb[0];
+								vb[1] = alpha * vf[1] + (1 - alpha) * vb[1];
+								vb[2] = alpha * vf[2] + (1 - alpha) * vb[2];
+							}
 						}
 					}
+					isSecondPanelAlertNeeded = false;
+				}
+				catch (cv::Exception &e)
+				{
+					isSecondPanelAlertNeeded = true;
+					secondPanelAlertString = "Can't move logo any further!";
+					secondPanelAdditionString = "Restore previous position to continue.";
 				}
 			}
 
 			/* Set cvUI window */
-			int firstPanelX = margin;
-			int firstPanelY = margin;
-			int firstPanelWidth = padding + menuWidth + padding;
-			int firstPanelHeight = cvUIWindowHeight - 2 * margin;
-			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, menuWidth, firstPanelHeight, padding);
+			int menuPanelX = margin;
+			int menuPanelY = margin;
+			int menuPanelWidth = padding + menuWidth + padding;
+			int menuPanelHeight = cvUIWindowHeight - 2 * margin;
+			cvui::rect(gui, menuPanelX, menuPanelY, menuPanelWidth, menuPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding);
 			cvui::text("Menu");
 			isRecordingModeEnabled = cvui::checkbox("Record straight to video file", &currentMode.recording);
 			cvui::text("    Set FPS:");
@@ -291,8 +302,8 @@ int main(int argc, char* argv[])
 				//	userPath += userChar;
 				//	userChar = 0;
 				//}
-				int status = cvui::iarea(firstPanelX + padding, margin + 10.5 * padding, menuWidth, padding);
-				cvui::rect(gui, firstPanelX + padding, margin + 10.5 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
+				int status = cvui::iarea(menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding);
+				cvui::rect(gui, menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
 				const char *userPathC = userPath.c_str();
 				cvui::text(userPathC);
 				// TODO: get rid of it, helper only
@@ -306,18 +317,31 @@ int main(int argc, char* argv[])
 			isLogoModeEnabled = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			cvui::endColumn();
 
-			int secondPanelX = margin + padding + menuWidth + 2 * padding;
-			int secondPanelY = margin;
-			int secondPanelWidth = padding + capWidth + padding;
-			int secondPanelHeight = margin + capHeight + 15 * padding;
-			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
+			int firstPanelX = margin + padding + menuWidth + 2 * padding;
+			int firstPanelY = margin;
+			int firstPanelWidth = padding + capWidth + padding;
+			int firstPanelHeight = margin + capHeight + 15 * padding;
+			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight, padding);
 			cvui::image(frame);
 			cvui::text("Frame track bar:");
 			// TODO: Zamienic trackbar na wlasciwy, narazie placeholder
 			cvui::trackbar(capWidth, &requestedFPS, 10, 100);
-			
+			cvui::endColumn();
+
+			// TODO: Obsluga drugiego okna, narazie placeholder
+			int secondPanelX = margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding;
+			int secondPanelY = margin;
+			int secondPanelWidth = padding + capWidth + padding;
+			int secondPanelHeight = padding + capHeight + 15 * padding;
+			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
+			if (isSecondPanelAlertNeeded) {
+				cvui::text(secondPanelAlertString);
+				cvui::text(secondPanelAdditionString);
+			}
 			if (isLogoModeEnabled) {
+				cvui::image(frame);
 				isMoveLogoModeEnabled = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
 				if (isMoveLogoModeEnabled) {
 					int buttonWidth = 60;
@@ -339,16 +363,6 @@ int main(int argc, char* argv[])
 					cvui::endRow();
 				}
 			}
-			cvui::endColumn();
-
-			// TODO: Obsluga drugiego okna, narazie placeholder
-			int thirdPanelX = margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding;
-			int thirdPanelY = margin;
-			int thirdPanelWidth = padding + capWidth + padding;
-			int thirdPanelHeight = padding + capHeight + padding;
-			cvui::rect(gui, thirdPanelX, thirdPanelY, thirdPanelWidth, thirdPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, thirdPanelX + padding, thirdPanelY + padding, capWidth, thirdPanelHeight);
-			cvui::image(frame);
 			cvui::endColumn();
 
 			cvui::imshow(CVUI_WINDOW_NAME, gui);
