@@ -12,6 +12,9 @@ using namespace std;
 #include "HeaderFiles/cvui.h"
 #define CVUI_WINDOW_NAME "Frame grabber"
 
+#define DELAY 10000
+#define KEYBOARD_SIZE 256
+
 /* cvUI	related	*/
 /* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
@@ -21,8 +24,9 @@ using namespace std;
 /* basic	*/ cv::Mat frame;
 
 /* Helpers and other variables */
-BYTE readKeys[256] = { (BYTE)0 };
-BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
+BYTE readKeys[KEYBOARD_SIZE] = { (BYTE)0 };
+BYTE userKeys[KEYBOARD_SIZE] = { (BYTE)0 };
+BYTE clearKeys[KEYBOARD_SIZE] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
 string path;
 string userPath = ""; // path to file defined by user
@@ -61,9 +65,25 @@ inline void openCamera()
 	capHeight = capHeight / 2;
 }
 
+void updateKeys(BYTE *keysOne, BYTE *keysTwo)
+{
+	for (int i = 0; i < KEYBOARD_SIZE; i++)
+	{
+		if (keysOne[i] != 0)
+			keysTwo[i] = keysOne[i];
+	}
+	return;
+}
+
 void modeUpdate(int requestedFPS)
 {
-	GetKeyboardState(readKeys);
+	// Trick to get couple of inputs
+	GetKeyboardState(userKeys);
+	for (int i = 0; i < DELAY; i++)
+	{
+		GetKeyboardState(readKeys);
+		updateKeys(readKeys, userKeys);
+	}
 
 	//bool pressedS = GetKeyState(0x53);
 	//bool pressedE = GetKeyState(0x45);
@@ -75,15 +95,15 @@ void modeUpdate(int requestedFPS)
 	//bool pressedCtrl = GetKeyState(0x11);
 	//bool pressedAlt = GetKeyState(0x12);
 
-	bool pressedS = readKeys[0x53];
-	bool pressedE = readKeys[0x45];
-	bool pressedV = readKeys[0x56];
-	bool pressedSpace = readKeys[0x20];
-	bool pressedLeft = readKeys[0x25];
-	bool pressedRight = readKeys[0x27];
-	bool pressedShift = readKeys[VK_SHIFT];
-	bool pressedCtrl = readKeys[VK_CONTROL];
-	bool pressedAlt = readKeys[VK_MENU];
+	bool pressedS = userKeys[0x53];
+	bool pressedE = userKeys[0x45];
+	bool pressedV = userKeys[0x56];
+	bool pressedSpace = userKeys[0x20];
+	bool pressedLeft = userKeys[0x25];
+	bool pressedRight = userKeys[0x27];
+	bool pressedShift = userKeys[VK_SHIFT];
+	bool pressedCtrl = userKeys[VK_CONTROL];
+	bool pressedAlt = userKeys[VK_MENU];
 
 	if (isPathInputModeEnabled)
 	{
@@ -133,15 +153,22 @@ void modeUpdate(int requestedFPS)
 			currentMode.stop = true;
 			currentMode.modeVideo = !currentMode.modeVideo;
 			currentMode.playVideo = false;
-			if (currentMode.modeVideo)
+			if (currentMode.modeVideo && userPath != "")
 			{
 				// cap.release();
-				outputVideo.release();
-				cap.open(userPath);
-				// Set max and starting frames
-				player::frameNum = 0;
-				player::frameMax = static_cast<long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
-				modeString = "Stopped recording if there was any, open video mode.";
+				try
+				{
+					outputVideo.release();
+					cap.open(userPath);
+					// Set max and starting frames
+					player::frameNum = 0;
+					player::frameMax = static_cast<long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+					modeString = "Stopped recording if there was any, open video mode.";
+				}
+				catch (cv::Exception &e)
+				{
+					modeString = "Set valid path to video file.";
+				}
 			}
 			else
 			{
@@ -315,7 +342,8 @@ int main(int argc, char* argv[])
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
-				player::playerAction(&player::frameNum, player::playerSignal);
+				printf("%d\n", player::frameNum);
+;				player::playerAction(&player::frameNum, player::playerSignal);
 			}
 			else
 			{
