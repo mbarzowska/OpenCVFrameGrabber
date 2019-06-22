@@ -15,7 +15,9 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled;
+/* on checkbox	*/ 
+bool isRecordingModeEnabled = true; 
+bool isPathInputModeEnabled = false;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 
@@ -60,10 +62,12 @@ void modeUpdate(int requestedFPS)
 	keyboard::updateKeys(keyboard::readKeys, keyboard::userKeys);
 	// Clear command input with Q
 	keyboard::clearCommands(keyboard::userKeys);
-
+	// Check for input mode
+	keyboard::pathInputModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, &isPathInputModeEnabled);
+	// Standard flow
 	if (isPathInputModeEnabled)
 	{
-		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, userPath);
+		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, userPath);
 	}
 	else
 	{
@@ -81,6 +85,7 @@ void modeUpdate(int requestedFPS)
 		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
 									    &currentMode, &isRecordingModeEnabled, modeString,
 										&outputVideo);
+		// Keyboard handler for video state
 		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
 									&currentMode, &player::frameNum, &player::frameMax, \
 									&player::playerSignal, userPath, modeString, \

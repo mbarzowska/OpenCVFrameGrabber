@@ -63,27 +63,27 @@ namespace player
 			*frameNum = frameMax;
 			break;
 		case PLAYER_NEXT_L:
-			if (*frameNum - ONE_STEP > frameMin)
+			if (*frameNum - ONE_STEP >= frameMin)
 				*frameNum -= ONE_STEP;
 			break;
 		case PLAYER_NEXT_R:
-			if (*frameNum + ONE_STEP < frameMax)
+			if (*frameNum + ONE_STEP <= frameMax)
 				*frameNum += ONE_STEP;
 			break;
 		case PLAYER_KEY_L:
-			if (*frameNum - KEY_STEP > frameMin)
+			if (*frameNum - KEY_STEP >= frameMin)
 				*frameNum -= KEY_STEP;
 			break;
 		case PLAYER_KEY_R:
-			if (*frameNum + KEY_STEP < frameMax)
+			if (*frameNum + KEY_STEP <= frameMax)
 				*frameNum += KEY_STEP;
 			break;
 		case PLAYER_BACKWARD:
-			if (*frameNum - BIG_STEP > frameMin)
+			if (*frameNum - BIG_STEP >= frameMin)
 				*frameNum -= BIG_STEP;
 			break;
 		case PLAYER_FORWARD:
-			if (*frameNum + BIG_STEP < frameMax)
+			if (*frameNum + BIG_STEP <= frameMax)
 				*frameNum += BIG_STEP;
 			break;
 		case PLAYER_SCENE_L:
@@ -93,7 +93,7 @@ namespace player
 			// TODO
 			break;
 		case PLAYER_STANDARD:
-			if (*frameNum + ONE_STEP < frameMax)
+			if (*frameNum + ONE_STEP <= frameMax)
 				*frameNum += ONE_STEP;
 			break;
 		case PLAYER_NONE:

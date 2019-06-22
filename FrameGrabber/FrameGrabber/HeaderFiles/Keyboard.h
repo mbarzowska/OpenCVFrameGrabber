@@ -14,6 +14,7 @@ Keyboard input helpers.
 #define KEYBOARD_SIZE 256
 #define VK_E 0x45
 #define VK_S 0x53
+#define VK_P 0x50
 #define VK_Q 0x51
 #define VK_V 0x56
 #define VK_ALT VK_MENU
@@ -35,7 +36,9 @@ namespace keyboard
 
 	void clearCommands(BYTE *_userKeys);
 
-	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, std::string& _userPath);
+	void inputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, bool *_isPathInputModeEnabled);
+
+	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, std::string& _userPath);
 
 	void recordingModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 							   bool *_isRecordingModeEnabled, std::string& _modeString, \
@@ -45,7 +48,7 @@ namespace keyboard
 						   long long int * frameNum, long long int * frameMax, int * playerSignal, \
 						   std::string & _userPath, std::string & _modeString, \
 						   cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-						   int * capWidth, int * capHeight);
+						   double * capWidth, double * capHeight);
 
 }
 
@@ -81,6 +84,7 @@ namespace keyboard
 			_userKeys[VK_E] = 0x0;
 			_userKeys[VK_S] = 0x0;
 			_userKeys[VK_V] = 0x0;
+			_userKeys[VK_P] = 0x0;
 			_userKeys[VK_Q] = 0x0;
 			_userKeys[VK_SPACE] = 0x0;
 			_userKeys[VK_DELETE] = 0x0;
@@ -93,25 +97,39 @@ namespace keyboard
 		return;
 	}
 
-	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, std::string& _userPath)
+	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, bool *_isPathInputModeEnabled)
 	{
-		if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_V]))
+		if (CHECK_MSB(_userKeys[VK_P]))
 		{
-			if (OpenClipboard(NULL)) {
-				HANDLE clip = GetClipboardData(CF_TEXT);
-				CloseClipboard();
-				_userPath = (char *)clip;
-			}
-			_userKeys[VK_V] = 0x0;
-			_userKeys[VK_CONTROL] = 0x0;
-			_readKeys[VK_V] = 0x0;
-			_readKeys[VK_CONTROL] = 0x0;
+			*_isPathInputModeEnabled = !(*_isPathInputModeEnabled);
+			_currentMode->pathInput = !(_currentMode->pathInput);
+			_userKeys[VK_P] = 0x0;
 		}
-		if (CHECK_MSB(userKeys[VK_DELETE]))
+		return;
+	}
+
+	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, std::string& _userPath)
+	{
+		if (_currentMode->pathInput)
 		{
-			_userPath = "";
-			_userKeys[VK_DELETE] = 0x0;
-			_readKeys[VK_DELETE] = 0x0;
+			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_V]))
+			{
+				if (OpenClipboard(NULL)) {
+					HANDLE clip = GetClipboardData(CF_TEXT);
+					CloseClipboard();
+					_userPath = (char *)clip;
+				}
+				_userKeys[VK_V] = 0x0;
+				_userKeys[VK_CONTROL] = 0x0;
+				_readKeys[VK_V] = 0x0;
+				_readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(userKeys[VK_DELETE]))
+			{
+				_userPath = "";
+				_userKeys[VK_DELETE] = 0x0;
+				_readKeys[VK_DELETE] = 0x0;
+			}
 		}
 		return;
 	}
