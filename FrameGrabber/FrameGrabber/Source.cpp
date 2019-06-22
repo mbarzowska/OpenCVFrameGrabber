@@ -16,7 +16,7 @@ using namespace std;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
-/* */ bool isSecondPanelAlertNeeded;
+/* */ bool isLogoMovingMessedUp;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
@@ -36,6 +36,10 @@ double capHeight = 0.0;
 string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
 int logoX = 0;
 int logoY = 0;
+cv::Mat frameWithLogo;
+double alpha = 0.3;
+cv::Mat3b roi;
+bool restore; // 349
 
 /* Video writing */
 string videoName;
@@ -173,7 +177,6 @@ void modeUpdate(int requestedFPS)
 			currentMode.applyLogo = true;
 			if (isMoveLogoModeEnabled)
 			{
-				// TODO: obsluga bledu przy przekroczeniu granicy ramki 
 				currentMode.moveLogo = true;
 				if (pressedLeftArrow || moveDirection.left)
 				{
@@ -201,6 +204,7 @@ void modeUpdate(int requestedFPS)
 		if (!isLogoModeEnabled)
 		{
 			currentMode.applyLogo = false;
+			currentMode.moveLogo = false;
 		}
 		
 	}
@@ -251,13 +255,22 @@ int main(int argc, char* argv[])
 				cap >> frame;
 			}
 
+			frame.copyTo(frameWithLogo);
+			
 			if (currentMode.applyLogo)
 			{
-				// TODO: spliting into other window holder
-				double alpha = 0.3;
-				cv::Mat3b roi;
 				try {
-					roi = frame(cv::Rect(logoX, logoY, logo.cols, logo.rows));
+					if (restore)
+					{
+						logoX = 0;
+						logoY = 0;
+						roi = frameWithLogo(cv::Rect(logoX, logoY, logo.cols, logo.rows));
+					}
+					else
+					{
+						roi = frameWithLogo(cv::Rect(logoX, logoY, logo.cols, logo.rows));
+					}
+					restore = false;
 					for (int r = 0; r < roi.rows; ++r)
 					{
 						for (int c = 0; c < roi.cols; ++c)
@@ -273,11 +286,11 @@ int main(int argc, char* argv[])
 							}
 						}
 					}
-					isSecondPanelAlertNeeded = false;
+					isLogoMovingMessedUp = false;
 				}
 				catch (cv::Exception &e)
 				{
-					isSecondPanelAlertNeeded = true;
+					isLogoMovingMessedUp = true;
 					secondPanelAlertString = "Can't move logo any further!";
 					secondPanelAdditionString = "Restore previous position to continue.";
 				}
@@ -336,31 +349,28 @@ int main(int argc, char* argv[])
 			int secondPanelHeight = padding + capHeight + 15 * padding;
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
-			if (isSecondPanelAlertNeeded) {
-				cvui::text(secondPanelAlertString);
-				cvui::text(secondPanelAdditionString);
-			}
 			if (isLogoModeEnabled) {
-				cvui::image(frame);
+				cvui::image(frameWithLogo);
 				isMoveLogoModeEnabled = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
 				if (isMoveLogoModeEnabled) {
+					if (isLogoMovingMessedUp) {
+						cvui::text(secondPanelAlertString);
+						cvui::text(secondPanelAdditionString);
+					}
 					int buttonWidth = 60;
 					int buttonHeight = 30;
 					cvui::beginRow();
-					cvui::beginColumn();
-					cvui::space(buttonHeight);
 					moveDirection.left = cvui::button(buttonWidth, buttonHeight, "LEFT");
-					cvui::endColumn();
-					cvui::beginColumn();
-					moveDirection.up = cvui::button(buttonWidth, buttonHeight, "UP");
-					cvui::space(buttonHeight);
-					moveDirection.down = cvui::button(buttonWidth, buttonHeight, "DOWN");
-					cvui::endColumn();
-					cvui::beginColumn();
-					cvui::space(buttonHeight);
 					moveDirection.right = cvui::button(buttonWidth, buttonHeight, "RIGHT");
-					cvui::endColumn();
+					cvui::space(buttonWidth);
+					moveDirection.up = cvui::button(buttonWidth, buttonHeight, "UP");
+					moveDirection.down = cvui::button(buttonWidth, buttonHeight, "DOWN");
 					cvui::endRow();
+					if (isLogoMovingMessedUp)
+					{
+						cvui::text("Or restore to starting point:");
+						restore = cvui::button(buttonWidth * 3, buttonHeight, "Restore to (0, 0)");
+					}
 				}
 			}
 			cvui::endColumn();
@@ -368,8 +378,6 @@ int main(int argc, char* argv[])
 			cvui::imshow(CVUI_WINDOW_NAME, gui);
 
 			modeUpdate(requestedFPS);
-
-			
 
 			// Some video is opened right now
 			if (currentMode.modeVideo)
