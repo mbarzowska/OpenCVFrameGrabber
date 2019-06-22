@@ -50,7 +50,11 @@ namespace keyboard
 						   cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
 						   double * capWidth, double * capHeight);
 
-	void 
+	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
+						  logoMoveDirections *_moveDirection, \
+						  bool *_isLogoModeEnabled, bool *_isMoveLogoModeEnabled, \
+						  int *_logoX, int *_logoY);
+
 }
 
 namespace keyboard
@@ -309,6 +313,55 @@ namespace keyboard
 				_userKeys[VK_RIGHT] = 0x0;
 				_readKeys[VK_RIGHT] = 0x0;
 			}
+		}
+		return;
+	}
+
+	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
+					      logoMoveDirections *_moveDirection, \
+						  bool *_isLogoModeEnabled, bool *_isMoveLogoModeEnabled, \
+						  int *_logoX, int *_logoY)
+	{
+		if (*_isLogoModeEnabled)
+		{
+			_currentMode->applyLogo = true;
+			if (*_isMoveLogoModeEnabled)
+			{
+				_currentMode->moveLogo = true;
+				if (CHECK_MSB(_userKeys[VK_LEFT]) || _moveDirection->left)
+				{
+					*_logoX -= 1;
+					_userKeys[VK_LEFT] = 0x0;
+					_readKeys[VK_LEFT] = 0x0;
+				}
+				else if (CHECK_MSB(_userKeys[VK_UP]) || _moveDirection->up)
+				{
+					*_logoY -= 1;
+					_userKeys[VK_UP] = 0x0;
+					_readKeys[VK_UP] = 0x0;
+				}
+				else if (CHECK_MSB(_userKeys[VK_RIGHT]) || _moveDirection->right)
+				{
+					*_logoX += 1;
+					_userKeys[VK_RIGHT] = 0x0;
+					_readKeys[VK_RIGHT] = 0x0;
+				}
+				else if (CHECK_MSB(_userKeys[VK_DOWN]) || _moveDirection->down)
+				{
+					*_logoY += 1;
+					_userKeys[VK_DOWN] = 0x0;
+					_readKeys[VK_DOWN] = 0x0;
+				}
+			}
+			if (!(*_isMoveLogoModeEnabled))
+			{
+				_currentMode->moveLogo = false;
+			}
+		}
+		else // if (!isLogoModeEnabled)
+		{
+			_currentMode->applyLogo = false;
+			_currentMode->moveLogo = false;
 		}
 		return;
 	}

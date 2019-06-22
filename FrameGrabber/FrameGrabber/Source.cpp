@@ -133,39 +133,10 @@ void modeUpdate(int requestedFPS)
 			cout << "can save frames" << endl;
 		}
 		// Logo keyboard handler
-		if (isLogoModeEnabled)
-		{
-			currentMode.applyLogo = true;
-			if (isMoveLogoModeEnabled)
-			{
-				currentMode.moveLogo = true;
-				if (pressedLeftArrow || moveDirection.left)
-				{
-					logoX -= 1;
-				}
-				else if (pressedUpArrow || moveDirection.up)
-				{
-					logoY -= 1;
-				}
-				else if (pressedRightArrow || moveDirection.right)
-				{
-					logoX += 1;
-				}
-				else if (pressedDownArrow || moveDirection.down)
-				{
-					logoY += 1;
-				}
-			}
-			if (!isMoveLogoModeEnabled)
-			{
-				currentMode.moveLogo = false;
-			}
-		}
-		else // if (!isLogoModeEnabled)
-		{
-			currentMode.applyLogo = false;
-			currentMode.moveLogo = false;
-		}
+		keyboard::logoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
+								   &currentMode, &moveDirection, \
+								   &isLogoModeEnabled, &isMoveLogoModeEnabled, \
+								   &logoX, &logoY);
 		// Image handler
 		currentMode.loadImage = isImageModeEnabled;
 	}
