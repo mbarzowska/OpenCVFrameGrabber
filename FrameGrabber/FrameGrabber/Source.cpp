@@ -84,12 +84,22 @@ void updateKeys(BYTE *keysOne, BYTE *keysTwo)
 void modeUpdate(int requestedFPS)
 {
 	GetKeyboardState(userKeys);
+
+	//userKeys[VK_E] = GetAsyncKeyState(VK_E);
+	//userKeys[VK_S] = GetAsyncKeyState(VK_S);
+	//userKeys[VK_V] = GetAsyncKeyState(VK_V);
+	//userKeys[VK_SPACE] = GetAsyncKeyState(VK_SPACE);
+	//userKeys[VK_DELETE] = GetAsyncKeyState(VK_DELETE);
+	//userKeys[VK_LEFT] = GetAsyncKeyState(VK_LEFT);
+	//userKeys[VK_RIGHT] = GetAsyncKeyState(VK_RIGHT);
+	//userKeys[VK_CONTROL] = GetAsyncKeyState(VK_CONTROL);
+	//userKeys[VK_SHIFT] = GetAsyncKeyState(VK_SHIFT);
+	//userKeys[VK_ALT] = GetAsyncKeyState(VK_ALT);
+
 	// Copy previous iter keys
 	updateKeys(readKeys, userKeys);
 
-	cout << "key    v: " << (int)userKeys[VK_V] << "\n";
-	cout << "keyright: " << (int)userKeys[VK_RIGHT] << "\n";
-	cout << "keycontrol: " << (int)userKeys[VK_CONTROL] << "\n";
+	cout << "keyrightBBB: " << (int)userKeys[VK_RIGHT] << "\n";
 
 	if (isPathInputModeEnabled)
 	{
