@@ -36,7 +36,7 @@ string userPath = ""; // path to file defined by user
 char userChar = 0;
 double capWidth = 0.0;
 double capHeight = 0.0;
-string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
+string logoPath = R"(C:\Users\Jan Iwaszkiewicz\Pictures\LBJ\avatar.png)"; // TODO
 int logoX = 0;
 int logoY = 0;
 cv::Mat frameWithLogo;
@@ -80,16 +80,14 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
-	bool pressedLeftArrow = GetKeyState(0x25);
-	bool pressedUpArrow = GetKeyState(0x26);
-	bool pressedRightArrow = GetKeyState(0x27);
-	bool pressedDownArrow = GetKeyState(0x28);
 	// Get current keyboard input
 	keyboard::initKeyboard(keyboard::userKeys);
 	// Copy previous iteration keys
 	keyboard::updateKeys(keyboard::readKeys, keyboard::userKeys);
+	// Update Command String
+	keyboard::updateCommandString(keyboard::userKeys, keyboard::currentCommand);
 	// Clear command input with Q
-	keyboard::clearCommands(keyboard::userKeys);
+	keyboard::clearCommands(keyboard::readKeys, keyboard::userKeys);
 	// Check for input mode
 	keyboard::pathInputModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, &isPathInputModeEnabled);
 	// Standard flow
@@ -261,6 +259,8 @@ int main(int argc, char* argv[])
 			int menuPanelHeight = cvUIWindowHeight - 2 * margin;
 			cvui::rect(gui, menuPanelX, menuPanelY, menuPanelWidth, menuPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding);
+			cvui::text("Current command:");
+			cvui::text(keyboard::currentCommand);
 			cvui::text("Menu");
 			if (!isImageModeEnabled)
 			{
