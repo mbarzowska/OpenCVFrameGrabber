@@ -12,7 +12,7 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled, isImageModeEnabled;
+/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled, isImageModeEnabled, isFrameGrabbingModeEnabled;
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
@@ -25,7 +25,7 @@ bool saveToFile;
 /* Helpers and other variables */
 BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
-string path;
+string videoSavingPath;
 string userPath = ""; // path to file defined by user
 char userChar = 0;
 unsigned long long int frameNum = 0; // frame counter
@@ -40,14 +40,18 @@ int logoY = 0;
 cv::Mat frameWithLogo;
 double alpha = 0.3;
 cv::Mat3b roi;
-bool restore; // 349
+bool restore;
 cv::Mat image;
 int buttonWidth = 60;
 int buttonHeight = 30;
+string imagesSavingPath;
+string framesFolderPath;
+string framesSavingPath;
 
 /* Image saving */
 vector<int> compression_params;
-
+string frameGrabbingSessionId;
+bool createFrameGrabbingFolderPath = false;
 
 /* Video writing */
 string videoName;
@@ -56,19 +60,27 @@ string modeString;
 
 static const char alphanum[] =
 "0123456789"
-"!@#$%^&*"
 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 "abcdefghijklmnopqrstuvwxyz";
 
 int stringLength = sizeof(alphanum) - 1;
 
-string generateRandomString()
+string generateRandomString(int mode)
 {
 	srand(time(0));
 	std::string str;
-	for (unsigned int i = 0; i < 20; ++i)
-	{
-		str += alphanum[rand() % stringLength];
+
+	if (mode == 1) {
+		for (unsigned int i = 0; i < 5; ++i)
+		{
+			str += alphanum[rand() % stringLength];
+		}
+	}
+	if (mode == 2) {
+		for (unsigned int i = 0; i < 20; ++i)
+		{
+			str += alphanum[rand() % stringLength];
+		}
 	}
 	return str;
 }
@@ -83,9 +95,10 @@ struct modes
 	bool applyLogo;
 	bool moveLogo;
 	bool loadImage;
+	bool frameGrabbing;
 };
 
-struct modes currentMode = { false, false, false, false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false, false, false, false };
 
 struct logoMoveDirections
 {
@@ -145,7 +158,7 @@ void modeUpdate(int requestedFPS)
 			(!outputVideo.isOpened() && isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
 		{
 			videoName = strhelp::createVideoName();
-			const auto outputPath = path + videoName;
+			const auto outputPath = videoSavingPath + videoName;
 			const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
 			const auto size = cv::Size(320, 240);
 			outputVideo.open(outputPath, codec, requestedFPS, size);
@@ -198,6 +211,21 @@ void modeUpdate(int requestedFPS)
 		{
 			currentMode.playVideo = !currentMode.playVideo;
 			modeString = "Running/Stopped video";
+		}
+
+		if (isFrameGrabbingModeEnabled && currentMode.modeVideo && !currentMode.playVideo)
+		{
+			currentMode.frameGrabbing = false;
+			//TODO in GUI
+			cout << "video not playing, cant save frames" << endl;
+		}
+
+		if (isFrameGrabbingModeEnabled && !currentMode.modeVideo ||
+			isFrameGrabbingModeEnabled && currentMode.modeVideo && currentMode.playVideo)
+		{
+			currentMode.frameGrabbing = true;
+			//TODO in GUI
+			cout << "can save frames" << endl;
 		}
 
 		if (isLogoModeEnabled)
@@ -256,6 +284,8 @@ void exit(cv::VideoCapture obj)
 	cv::destroyAllWindows();
 }
 
+int fc;
+
 int main(int argc, char* argv[])
 {
 	//TODO: find more elegant way to determine path
@@ -263,7 +293,9 @@ int main(int argc, char* argv[])
 	string base = argvStr.substr(0, argvStr.find_last_of("\\"));
 	string base2 = base.substr(0, base.find_last_of("\\"));
 	string base3 = base2.substr(0, base2.find_last_of("\\"));
-	path = base3 + "\\FrameGrabber\\Video\\";
+	videoSavingPath = base3 + "\\FrameGrabber\\Video\\";
+	framesFolderPath = base3 + "\\FrameGrabber\\Frames\\";
+	imagesSavingPath = base3 + "\\FrameGrabber\\Images\\";
 
 	openCamera();
 
@@ -286,6 +318,7 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
+
 			if (currentMode.modeVideo)
 			{
 				cap.set(cv::CAP_PROP_POS_FRAMES, frameNum);
@@ -308,6 +341,8 @@ int main(int argc, char* argv[])
 			else
 			{
 				cap >> frame;
+				fc += 1;
+				cout << "FC" << fc << endl;
 			}
 
 			frame.copyTo(frameWithLogo);
@@ -401,6 +436,7 @@ int main(int argc, char* argv[])
 			{
 				saveToFile = cvui::button(buttonWidth, buttonHeight, "Save to file");
 			}
+			isFrameGrabbingModeEnabled = cvui::checkbox("Save video to files", &currentMode.frameGrabbing);
 			cvui::endColumn();
 
 			int firstPanelX = margin + padding + menuWidth + 2 * padding;
@@ -452,15 +488,39 @@ int main(int argc, char* argv[])
 
 			modeUpdate(requestedFPS);
 
+			if (!currentMode.frameGrabbing) {
+				frameGrabbingSessionId = generateRandomString(1);
+				createFrameGrabbingFolderPath = true;
+			}
+
+			if (isFrameGrabbingModeEnabled)
+			{
+				if (createFrameGrabbingFolderPath)
+				{
+					framesSavingPath =  framesFolderPath + frameGrabbingSessionId;
+					CreateDirectory(framesSavingPath.c_str(), NULL);
+					createFrameGrabbingFolderPath = false;
+				}
+
+				if (isLogoModeEnabled)
+				{
+					cv::imwrite(framesSavingPath + "\\" + generateRandomString(2) + ".jpg", frameWithLogo, compression_params);
+				}
+				else
+				{
+					cv::imwrite(framesSavingPath + "\\" + generateRandomString(2) + ".jpg", frame, compression_params);
+				}
+			}
+
 			if (saveToFile)
 			{
 				if (isLogoModeEnabled)
 				{
-					cv::imwrite(path + generateRandomString() + ".jpg", frameWithLogo, compression_params);
+					cv::imwrite(videoSavingPath + generateRandomString(2) + ".jpg", frameWithLogo, compression_params);
 				}
 				else
 				{
-					cv::imwrite(path + generateRandomString() + ".jpg", frame, compression_params);
+					cv::imwrite(videoSavingPath + generateRandomString(2) + ".jpg", frame, compression_params);
 				}
 			}
 			// Some video is opened right now
