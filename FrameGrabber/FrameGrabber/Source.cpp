@@ -36,7 +36,7 @@ string userPath = ""; // path to file defined by user
 char userChar = 0;
 double capWidth = 0.0;
 double capHeight = 0.0;
-string logoPath = R"(C:\Users\Jan Iwaszkiewicz\Pictures\LBJ\avatar.png)"; // TODO
+string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
 int logoX = 0;
 int logoY = 0;
 cv::Mat frameWithLogo;
@@ -400,7 +400,14 @@ int main(int argc, char* argv[])
 			{
 				if (currentMode.playVideo && currentMode.recording && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) // TODO: Mode logoMode?
 				{
-					outputVideo.write(frame);
+					if (isLogoModeEnabled)
+					{
+						outputVideo.write(frameWithLogo);
+					}
+					else
+					{
+						outputVideo.write(frame);
+					}
 				}
 				printf("%d\n", player::frameNum);
 				player::playerAction(&player::frameNum, player::playerSignal);
@@ -409,7 +416,14 @@ int main(int argc, char* argv[])
 			{
 				if (currentMode.recording)
 				{
-					outputVideo.write(frame);
+					if (isLogoModeEnabled)
+					{
+						outputVideo.write(frameWithLogo);
+					}
+					else 
+					{
+						outputVideo.write(frame);
+					}
 				}
 			}
 
