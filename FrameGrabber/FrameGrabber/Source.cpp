@@ -64,33 +64,6 @@ struct modes currentMode = { false, false, false, false, false, false, false, fa
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
-static const char alphanum[] =
-"0123456789"
-"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-"abcdefghijklmnopqrstuvwxyz";
-
-int stringLength = sizeof(alphanum) - 1;
-
-string generateRandomString(int mode)
-{
-	srand(time(0));
-	std::string str;
-
-	if (mode == 1) {
-		for (unsigned int i = 0; i < 5; ++i)
-		{
-			str += alphanum[rand() % stringLength];
-		}
-	}
-	if (mode == 2) {
-		for (unsigned int i = 0; i < 20; ++i)
-		{
-			str += alphanum[rand() % stringLength];
-		}
-	}
-	return str;
-}
-
 inline void openCamera()
 {
 	/* Open a camera for video capturing */
@@ -145,14 +118,13 @@ void modeUpdate(int requestedFPS)
 									&currentMode, &player::frameNum, &player::frameMax, \
 									&player::playerSignal, userPath, modeString, \
 									&outputVideo, &cap, &capWidth, &capHeight);
-    
-    if (isFrameGrabbingModeEnabled && currentMode.modeVideo && !currentMode.playVideo)
+		// FrameGrabbing keyboard handler
+		if (isFrameGrabbingModeEnabled && currentMode.modeVideo && !currentMode.playVideo)
 		{
 			currentMode.frameGrabbing = false;
 			//TODO in GUI
 			cout << "video not playing, cant save frames" << endl;
 		}
-
 		if (isFrameGrabbingModeEnabled && !currentMode.modeVideo ||
 			isFrameGrabbingModeEnabled && currentMode.modeVideo && currentMode.playVideo)
 		{
@@ -160,7 +132,7 @@ void modeUpdate(int requestedFPS)
 			//TODO in GUI
 			cout << "can save frames" << endl;
 		}
-
+		// Logo keyboard handler
 		if (isLogoModeEnabled)
 		{
 			currentMode.applyLogo = true;
@@ -189,22 +161,13 @@ void modeUpdate(int requestedFPS)
 				currentMode.moveLogo = false;
 			}
 		}
-
-		if (!isLogoModeEnabled)
+		else // if (!isLogoModeEnabled)
 		{
 			currentMode.applyLogo = false;
 			currentMode.moveLogo = false;
 		}
-
-		if (isImageModeEnabled)
-		{
-			currentMode.loadImage = true;
-		}
-
-		if (!isImageModeEnabled)
-		{
-			currentMode.loadImage = false;
-		}
+		// Image handler
+		currentMode.loadImage = isImageModeEnabled;
 	}
 	// Clear KeyboardState
 	keyboard::clearKeyboard();
@@ -423,7 +386,7 @@ int main(int argc, char* argv[])
 			modeUpdate(requestedFPS);
 
 			if (!currentMode.frameGrabbing) {
-				frameGrabbingSessionId = generateRandomString(1);
+				frameGrabbingSessionId = strhelp::generateRandomString(5);
 				createFrameGrabbingFolderPath = true;
 			}
 
@@ -454,11 +417,11 @@ int main(int argc, char* argv[])
 			{
 				if (isLogoModeEnabled)
 				{
-					cv::imwrite(videoSavingPath + generateRandomString(2) + ".jpg", frameWithLogo, compression_params);
+					cv::imwrite(videoSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params);
 				}
 				else
 				{
-					cv::imwrite(videoSavingPath + generateRandomString(2) + ".jpg", frame, compression_params);
+					cv::imwrite(videoSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params);
 				}
 			}
 			// Some video is opened right now

@@ -50,6 +50,7 @@ namespace keyboard
 						   cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
 						   double * capWidth, double * capHeight);
 
+	void 
 }
 
 namespace keyboard

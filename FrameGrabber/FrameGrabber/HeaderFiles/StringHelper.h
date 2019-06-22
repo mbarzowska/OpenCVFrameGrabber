@@ -22,6 +22,13 @@ SYSTEMTIME lt; // System local time
 namespace strhelp
 {
 	/**
+	Create random string.
+
+	@param len length of string
+	*/
+	std::string generateRandomString(int len);
+
+	/**
 	Create folder name using current local time.
 
 	@param customName name added at the end of folder's name
@@ -48,6 +55,24 @@ namespace strhelp
 // Function implementations
 namespace strhelp
 {
+	static const char alphanum[] =
+		"0123456789"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz";
+
+	int alphabetLength = sizeof(alphanum) - 1;
+
+	std::string generateRandomString(int len)
+	{
+		srand(time(0));
+		std::string str;
+		for (unsigned int i = 0; i < len; ++i)
+		{
+			str += alphanum[rand() % alphabetLength];
+		}
+		return str;
+	}
+
 	std::string createFolderName(const std::string& customName)
 	{
 		// Get timestamp
