@@ -284,7 +284,7 @@ void exit(cv::VideoCapture obj)
 	cv::destroyAllWindows();
 }
 
-int fc;
+int frameCounter;
 
 int main(int argc, char* argv[])
 {
@@ -341,10 +341,9 @@ int main(int argc, char* argv[])
 			else
 			{
 				cap >> frame;
-				fc += 1;
-				cout << "FC" << fc << endl;
 			}
 
+			frameCounter += 1;
 			frame.copyTo(frameWithLogo);
 
 			if (currentMode.applyLogo)
@@ -504,11 +503,11 @@ int main(int argc, char* argv[])
 
 				if (isLogoModeEnabled)
 				{
-					cv::imwrite(framesSavingPath + "\\" + generateRandomString(2) + ".jpg", frameWithLogo, compression_params);
+					cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
 				}
 				else
 				{
-					cv::imwrite(framesSavingPath + "\\" + generateRandomString(2) + ".jpg", frame, compression_params);
+					cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
 				}
 			}
 
