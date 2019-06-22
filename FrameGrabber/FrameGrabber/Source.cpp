@@ -17,6 +17,7 @@ using namespace std;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
 /* */ bool isLogoMovingMessedUp, isImageLoaded;
+bool saveToFile;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
@@ -41,6 +42,8 @@ double alpha = 0.3;
 cv::Mat3b roi;
 bool restore; // 349
 cv::Mat image;
+int buttonWidth = 60;
+int buttonHeight = 30;
 
 /* Video writing */
 string videoName;
@@ -329,10 +332,14 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, menuPanelX, menuPanelY, menuPanelWidth, menuPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding);
 			cvui::text("Menu");
-			isRecordingModeEnabled = cvui::checkbox("Record straight to video file", &currentMode.recording);
-			cvui::text("    Set FPS:");
-			cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
-			isPathInputModeEnabled = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
+			if (!isImageModeEnabled)
+			{
+				isRecordingModeEnabled = cvui::checkbox("Record straight to video file", &currentMode.recording);
+				cvui::text("    Set FPS:");
+				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
+
+			}
+				isPathInputModeEnabled = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
 			if (isPathInputModeEnabled)
 			{
 				//if (userChar != 0)
@@ -340,11 +347,20 @@ int main(int argc, char* argv[])
 				//	userPath += userChar;
 				//	userChar = 0;
 				//}
-				int status = cvui::iarea(menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding);
-				cvui::rect(gui, menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
+				// TODO: Zapanowac nad menu 
+				int status;
+				if (isImageModeEnabled)
+				{
+					status = cvui::iarea(menuPanelX + padding, margin + 4 * padding, menuWidth, padding);
+					cvui::rect(gui, menuPanelX + padding, margin + 4 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
+				}
+				else
+				{
+					status = cvui::iarea(menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding);
+					cvui::rect(gui, menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
+				}
 				const char *userPathC = userPath.c_str();
 				cvui::text(userPathC);
-				// TODO: get rid of it, helper only
 				switch (status) {
 				case cvui::CLICK:  std::cout << "Clicked!" << std::endl; break;
 				case cvui::DOWN:   cvui::text("Mouse is: DOWN"); break;
@@ -354,6 +370,10 @@ int main(int argc, char* argv[])
 			}
 			isLogoModeEnabled = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			isImageModeEnabled = cvui::checkbox("Show image", &currentMode.loadImage);
+			if (isImageModeEnabled)
+			{
+				saveToFile = cvui::button(buttonWidth, buttonHeight, "Save to file");
+			}
 			cvui::endColumn();
 
 			int firstPanelX = margin + padding + menuWidth + 2 * padding;
@@ -386,8 +406,6 @@ int main(int argc, char* argv[])
 						cvui::text(secondPanelAlertString);
 						cvui::text(secondPanelAdditionString);
 					}
-					int buttonWidth = 60;
-					int buttonHeight = 30;
 					cvui::beginRow();
 					moveDirection.left = cvui::button(buttonWidth, buttonHeight, "LEFT");
 					moveDirection.right = cvui::button(buttonWidth, buttonHeight, "RIGHT");
@@ -407,6 +425,10 @@ int main(int argc, char* argv[])
 
 			modeUpdate(requestedFPS);
 
+			if (saveToFile)
+			{
+				cout << "Image saving here" << endl;
+			}
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
