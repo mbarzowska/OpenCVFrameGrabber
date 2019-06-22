@@ -79,11 +79,11 @@ void modeUpdate(int requestedFPS)
 {
 	// Trick to get couple of inputs
 	GetKeyboardState(userKeys);
-	for (int i = 0; i < DELAY; i++)
-	{
-		GetKeyboardState(readKeys);
-		updateKeys(readKeys, userKeys);
-	}
+	//for (int i = 0; i < DELAY; i++)
+	//{
+	//	GetKeyboardState(readKeys);
+	//	updateKeys(readKeys, userKeys);
+	//}
 
 	//bool pressedS = GetKeyState(0x53);
 	//bool pressedE = GetKeyState(0x45);
@@ -94,6 +94,9 @@ void modeUpdate(int requestedFPS)
 	//bool pressedShift = GetKeyState(0x10);
 	//bool pressedCtrl = GetKeyState(0x11);
 	//bool pressedAlt = GetKeyState(0x12);
+
+	printf("keyright: %d\n", userKeys[0x27]);
+	printf("keyshift: %d\n", userKeys[VK_SHIFT]);
 
 	bool pressedS = userKeys[0x53];
 	bool pressedE = userKeys[0x45];
@@ -162,7 +165,7 @@ void modeUpdate(int requestedFPS)
 					cap.open(userPath);
 					// Set max and starting frames
 					player::frameNum = 0;
-					player::frameMax = static_cast<long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+					player::frameMax = static_cast<long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT)) - 1; // -1 !!!!
 					modeString = "Stopped recording if there was any, open video mode.";
 				}
 				catch (cv::Exception &e)
@@ -321,8 +324,8 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
 			cvui::image(frame);
-			// TODO: Zamienic trackbar na wlasciwy, narazie placeholder
-			cvui::trackbar(capWidth, &requestedFPS, 10, 100);
+			// Need to convert in that way, maybe put in the player to do it under the hood
+			cvui::trackbar(capWidth, &player::frameNum, player::frameMin, player::frameMax + (player::frameMax == 0 ? 1 : 0));
 			cvui::endColumn();
 
 			// TODO: Obsluga drugiego okna, narazie placeholder
