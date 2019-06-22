@@ -41,7 +41,7 @@ namespace strhelp
 	@param frameNumber given frame "index"
 	@param format given format of picture, default - jpg
 	*/
-	std::string createFrameName(unsigned long long int frameNumber, const std::string& format = "jpg");
+	std::string createFrameName(long long int frameNumber, const std::string& format = "jpg");
 
 } // namespace strhelp
 
@@ -74,7 +74,7 @@ namespace strhelp
 		return videoName;
 	}
 
-	std::string createFrameName(unsigned long long int frameNumber, const std::string& format)
+	std::string createFrameName(long long int frameNumber, const std::string& format)
 	{
 		// Get timestamp
 		GetLocalTime(&lt);

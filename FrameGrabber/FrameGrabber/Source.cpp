@@ -3,7 +3,10 @@
 #include <iostream>
 #include <windows.h>
 #include <conio.h>
+#include "HeaderFiles/Modes.h"
 #include "HeaderFiles/StringHelper.h"
+#include "HeaderFiles/Player.h"
+#include "HeaderFiles/Keyboard.h"
 
 using namespace std;
 
@@ -12,7 +15,11 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ bool isRecordingModeEnabled, isPathInputModeEnabled, isLogoModeEnabled, isMoveLogoModeEnabled, isImageModeEnabled, isFrameGrabbingModeEnabled;
+/* on checkbox	*/ 
+bool isRecordingModeEnabled = true;
+bool isPathInputModeEnabled = false;
+bool isLogoModeEnabled, isMoveLogoModeEnabled, isImageModeEnabled, isFrameGrabbingModeEnabled;
+
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
@@ -23,15 +30,10 @@ bool saveToFile;
 /* basic	*/ cv::Mat frame;
 
 /* Helpers and other variables */
-BYTE clearKeys[256] = { (BYTE)0 }; // All are 0's for clearing keyboard input
 cv::VideoCapture cap;
 string videoSavingPath;
 string userPath = ""; // path to file defined by user
 char userChar = 0;
-unsigned long long int frameNum = 0; // frame counter
-unsigned long long int frameMin = 0; // min frame number
-unsigned long long int frameMax = 0; // max frame number
-unsigned long long int frameStep = 1; // current frame step
 double capWidth = 0.0;
 double capHeight = 0.0;
 string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
@@ -126,31 +128,22 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
-	bool pressedS = GetKeyState(0x53);
-	bool pressedE = GetKeyState(0x45);
-	bool pressedV = GetKeyState(0x56);
-	bool pressedSpace = GetKeyState(0x20);
 	bool pressedLeftArrow = GetKeyState(0x25);
 	bool pressedUpArrow = GetKeyState(0x26);
 	bool pressedRightArrow = GetKeyState(0x27);
 	bool pressedDownArrow = GetKeyState(0x28);
-	bool pressedShift = GetKeyState(0x10);
-	bool pressedCtrl = GetKeyState(0x11);
-	bool pressedAlt = GetKeyState(0x12);
-
+	// Get current keyboard input
+	keyboard::initKeyboard(keyboard::userKeys);
+	// Copy previous iteration keys
+	keyboard::updateKeys(keyboard::readKeys, keyboard::userKeys);
+	// Clear command input with Q
+	keyboard::clearCommands(keyboard::userKeys);
+	// Check for input mode
+	keyboard::pathInputModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, &isPathInputModeEnabled);
+	// Standard flow
 	if (isPathInputModeEnabled)
 	{
-		if (pressedCtrl && pressedV)
-		{
-			if (OpenClipboard(NULL)) {
-				HANDLE clip = GetClipboardData(CF_TEXT);
-				CloseClipboard();
-				userPath = (char *)clip;
-			}
-		}
-		// TODO: Write letters
-		// if (pressedS)
-			// userChar = 's';
+		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, userPath);
 	}
 	else
 	{
@@ -164,56 +157,17 @@ void modeUpdate(int requestedFPS)
 			outputVideo.open(outputPath, codec, requestedFPS, size);
 			modeString = "New file opened";
 		}
-
-		if ((pressedS || isRecordingModeEnabled && !currentMode.modeVideo) ||
-			(isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
-		{
-			currentMode.recording = true;
-			currentMode.stop = false;
-			isRecordingModeEnabled = true;
-			modeString = "To video file";
-		}
-
-		if ((pressedE || !isRecordingModeEnabled && !currentMode.modeVideo) ||
-			(!isRecordingModeEnabled && !currentMode.playVideo))
-		{
-			currentMode.recording = false;
-			currentMode.stop = true;
-			// modeString = "Stopped";
-			outputVideo.release();
-		}
-
-		if (pressedV)
-		{
-			currentMode.recording = false;
-			currentMode.stop = true;
-			currentMode.modeVideo = !currentMode.modeVideo;
-			currentMode.playVideo = false;
-			if (currentMode.modeVideo)
-			{
-				// cap.release();
-				outputVideo.release();
-				cap.open(userPath);
-				// Set max and starting frames
-				frameNum = 0;
-				frameMax = static_cast<unsigned long long int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
-				modeString = "Stopped recording if there was any, open video mode.";
-			}
-			else
-			{
-				// cap.release();
-				openCamera();
-				modeString = "Stopped video mode, started recording mode.";
-			}
-		}
-
-		if (pressedSpace && currentMode.modeVideo)
-		{
-			currentMode.playVideo = !currentMode.playVideo;
-			modeString = "Running/Stopped video";
-		}
-
-		if (isFrameGrabbingModeEnabled && currentMode.modeVideo && !currentMode.playVideo)
+		// Keyboard handler for recording state
+		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
+									    &currentMode, &isRecordingModeEnabled, modeString,
+										&outputVideo);
+		// Keyboard handler for video state
+		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
+									&currentMode, &player::frameNum, &player::frameMax, \
+									&player::playerSignal, userPath, modeString, \
+									&outputVideo, &cap, &capWidth, &capHeight);
+    
+    if (isFrameGrabbingModeEnabled && currentMode.modeVideo && !currentMode.playVideo)
 		{
 			currentMode.frameGrabbing = false;
 			//TODO in GUI
@@ -273,8 +227,10 @@ void modeUpdate(int requestedFPS)
 			currentMode.loadImage = false;
 		}
 	}
-	// Clear keyborad
-	SetKeyboardState(clearKeys);
+	// Clear KeyboardState
+	keyboard::clearKeyboard();
+	// Copy current pressed to next state used later at the begining
+	keyboard::updateKeys(keyboard::userKeys, keyboard::readKeys);
 }
 
 /* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
@@ -321,7 +277,7 @@ int main(int argc, char* argv[])
 
 			if (currentMode.modeVideo)
 			{
-				cap.set(cv::CAP_PROP_POS_FRAMES, frameNum);
+				cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
 				cap >> frame;
 			}
 			else if (currentMode.loadImage)
@@ -408,7 +364,7 @@ int main(int argc, char* argv[])
 				//	userPath += userChar;
 				//	userChar = 0;
 				//}
-				// TODO: Zapanowac nad menu 
+				// TODO: Zapanowac nad menu +1
 				int status;
 				if (isImageModeEnabled)
 				{
@@ -445,15 +401,15 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight, padding);
 			cvui::image(frame);
-			// TODO: Zamienic trackbar na wlasciwy, narazie placeholder
 			if (!isImageModeEnabled)
 			{
 				cvui::text("Frame track bar:");
-				cvui::trackbar(capWidth, &requestedFPS, 10, 100);
+        // Need to convert in that way, maybe put in the player to do it under the hood
+			  cvui::trackbar(capWidth, &player::frameNum, player::frameMin, player::frameMax + (player::frameMax == 0 ? 1 : 0));
 			}
 			cvui::endColumn();
 
-			// TODO: Pe³na obsluga drugiego okna
+			// TODO: Peï¿½na obsluga drugiego okna
 			int secondPanelX = margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding;
 			int secondPanelY = margin;
 			int secondPanelWidth = padding + capWidth + padding;
@@ -529,21 +485,12 @@ int main(int argc, char* argv[])
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
-				if (currentMode.playVideo && currentMode.recording)
+				if (currentMode.playVideo && currentMode.recording && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) // TODO: Mode logoMode?
 				{
 					outputVideo.write(frame);
 				}
-				/// TODO: Add handle of playing the film
-				if (currentMode.playVideo && (frameNum + frameStep) < frameMax)
-				{
-					frameNum += frameStep;
-				}
-				else if (currentMode.playVideo && (frameNum + frameStep) >= frameMax)
-				{
-					// replaying
-					frameNum = 0;
-					cap.set(cv::CAP_PROP_POS_FRAMES, 0);
-				}
+				printf("%d\n", player::frameNum);
+				player::playerAction(&player::frameNum, player::playerSignal);
 			}
 			else
 			{
@@ -560,6 +507,7 @@ int main(int argc, char* argv[])
 		{
 			_getch();
 			exit(cap);
+			getchar();
 			return -1;
 		}
 	}
