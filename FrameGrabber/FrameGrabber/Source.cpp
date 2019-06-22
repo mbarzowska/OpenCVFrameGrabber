@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
 			cvui::trackbar(capWidth, &requestedFPS, 10, 100);
 			cvui::endColumn();
 
-			// TODO: Obsluga drugiego okna, narazie placeholder
+			// TODO: Pe³na obsluga drugiego okna
 			int secondPanelX = margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding;
 			int secondPanelY = margin;
 			int secondPanelWidth = padding + capWidth + padding;
