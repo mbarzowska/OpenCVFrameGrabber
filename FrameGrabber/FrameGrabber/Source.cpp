@@ -32,7 +32,7 @@ string videoSavingPath;
 char userChar = 0;
 double capWidth = 0.0;
 double capHeight = 0.0;
-string logoPath = R"(C:\Users\Jan Iwaszkiewicz\Pictures\LBJ\avatar.png)"; // TODO
+string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
 int logoX = 0;
 int logoY = 0;
 cv::Mat frameWithLogo;
