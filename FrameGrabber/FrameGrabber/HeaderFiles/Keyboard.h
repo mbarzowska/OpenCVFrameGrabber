@@ -393,7 +393,6 @@ namespace keyboard
 				{
 					_modeString += "Can't open the camera! ";
 				}
-				// _modeString = "Recording mode | ";
 			}
 			_userKeys[VK_V] = 0x0;
 			_readKeys[VK_V] = 0x0;
