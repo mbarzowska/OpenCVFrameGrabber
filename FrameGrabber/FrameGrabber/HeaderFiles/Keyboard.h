@@ -57,7 +57,8 @@ namespace keyboard
 		long long int * frameNum, long long int * frameMax, int * playerSignal, \
 		std::string & _userPath, std::string & _modeString, \
 		cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-		double * capWidth, double * capHeight);
+		double * capWidth, double * capHeight, \
+		cv::Mat *_firstFrame, cv::Mat *_lastFrame);
 
 	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 		logoMoveDirections *_moveDirection, \
@@ -167,6 +168,11 @@ namespace keyboard
 		if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_P]))
 		{
 			_currentMode->pathInput = !(_currentMode->pathInput);
+			// Clear all checkboxes
+			_currentMode->pathVideoInput = false;
+			_currentMode->pathFramesInput = false;
+			_currentMode->pathImageInput = false;
+			_currentMode->pathLogoInput = false;
 			_userKeys[VK_CONTROL] = 0x0;
 			_userKeys[VK_P] = 0x0;
 			_readKeys[VK_CONTROL] = 0x0;
@@ -321,7 +327,8 @@ namespace keyboard
 		long long int *frameNum, long long int *frameMax, int *playerSignal, \
 		std::string& _userPathVideo, std::string& _modeString, \
 		cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-		double *capWidth, double *capHeight)
+		double *capWidth, double *capHeight, \
+		cv::Mat *_firstFrame, cv::Mat *_lastFrame)
 	{
 		if (CHECK_MSB(_userKeys[VK_V]))
 		{
@@ -338,6 +345,12 @@ namespace keyboard
 					// Set max and starting frames
 					*frameNum = 0;
 					*frameMax = static_cast<long long int>(_cap->get(cv::CAP_PROP_FRAME_COUNT)) - 1; // -1 !!!!
+					// Get first and last frame
+					_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
+					_cap->read(*_firstFrame);
+					_cap->set(cv::CAP_PROP_POS_FRAMES, *frameMax);
+					_cap->read(*_lastFrame);
+					_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
 					_modeString = "Stopped recording if there was any, open video mode.";
 				}
 				catch (cv::Exception &e)
@@ -347,10 +360,12 @@ namespace keyboard
 			}
 			else
 			{
+				// Reset trackbar values
+				*frameNum = 0;
+				*frameMax = 1;
 				// cap.release();
 				/* Open a camera for video capturing */
 				_cap->open(0);
-
 				/* Set properties */
 				*capWidth = _cap->get(cv::CAP_PROP_FRAME_WIDTH);
 				*capHeight = _cap->get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -386,6 +401,8 @@ namespace keyboard
 			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_SHIFT]) && CHECK_MSB(_userKeys[VK_LEFT]))
 			{
 				*playerSignal = PLAYER_SCENE_L;
+				_currentMode->previousSceneRequest = !(_currentMode->previousSceneRequest);
+				_currentMode->nextSceneRequest = false;
 				_userKeys[VK_LEFT] = 0x0;
 				_userKeys[VK_SHIFT] = 0x0;
 				_userKeys[VK_CONTROL] = 0x0;
@@ -396,6 +413,8 @@ namespace keyboard
 			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_SHIFT]) && CHECK_MSB(_userKeys[VK_RIGHT]))
 			{
 				*playerSignal = PLAYER_SCENE_R;
+				_currentMode->nextSceneRequest = !(_currentMode->nextSceneRequest);
+				_currentMode->previousSceneRequest = false;
 				_userKeys[VK_RIGHT] = 0x0;
 				_userKeys[VK_SHIFT] = 0x0;
 				_userKeys[VK_CONTROL] = 0x0;

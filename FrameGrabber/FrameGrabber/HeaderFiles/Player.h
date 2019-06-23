@@ -87,10 +87,10 @@ namespace player
 				*frameNum += BIG_STEP;
 			break;
 		case PLAYER_SCENE_L:
-			// TODO
+			playerAction(frameNum, PLAYER_NEXT_L);
 			break;
 		case PLAYER_SCENE_R:
-			// TODO
+			playerAction(frameNum, PLAYER_NEXT_R);
 			break;
 		case PLAYER_STANDARD:
 			if (*frameNum + ONE_STEP <= frameMax)

@@ -24,7 +24,12 @@ using namespace std;
 bool saveFrameToFile;
 
 /* Matrices	*/
-/* basic	*/ cv::Mat frame;
+cv::Mat frame;
+cv::Mat firstFrame;
+cv::Mat lastFrame;
+cv::Mat frameWithLogo;
+cv::Mat image;
+cv::Mat3b roi;
 
 /* Helpers and other variables */
 cv::VideoCapture cap;
@@ -32,14 +37,10 @@ string videoSavingPath;
 char userChar = 0;
 double capWidth = 0.0;
 double capHeight = 0.0;
-string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
 int logoX = 0;
 int logoY = 0;
-cv::Mat frameWithLogo;
 double alpha = 0.3;
-cv::Mat3b roi;
 bool restore;
-cv::Mat image;
 int buttonWidth = 60;
 int buttonHeight = 30;
 string imagesSavingPath;
@@ -118,7 +119,7 @@ void modeUpdate(int requestedFPS)
 		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
 			&currentMode, &player::frameNum, &player::frameMax, \
 			&player::playerSignal, userPathVideo, modeString, \
-			&outputVideo, &cap, &capWidth, &capHeight);
+			&outputVideo, &cap, &capWidth, &capHeight, &firstFrame, &lastFrame);
 		// FrameGrabbing keyboard handler
 		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
 		{
@@ -150,7 +151,7 @@ void exit(cv::VideoCapture obj)
 	cv::destroyAllWindows();
 }
 
-int frameCounter;
+int frameCounter = 0;
 
 int main(int argc, char* argv[])
 {
@@ -173,9 +174,6 @@ int main(int argc, char* argv[])
 	cv::Mat gui = cv::Mat(cv::Size(cvUIWindowWidth, cvUIWindowHeight), CV_8UC3);
 	gui = cv::Scalar(55, 55, 55);
 
-	cv::Mat4b logo = cv::imread(logoPath, cv::IMREAD_UNCHANGED);
-	resize(logo, logo, cv::Size(64, 64));
-
 	/* Set compression parameters */
 	compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
 	compression_params.push_back(100);
@@ -184,7 +182,6 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
-
 			if (currentMode.modeVideo)
 			{
 				cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
@@ -208,12 +205,26 @@ int main(int argc, char* argv[])
 			{
 				cap >> frame;
 			}
-
+			// For scene modes ifs
+			if (currentMode.previousSceneRequest)
+			{
+				firstFrame.copyTo(frameWithLogo);
+			}
+			else if (currentMode.nextSceneRequest)
+			{
+				lastFrame.copyTo(frameWithLogo);
+			}
+			else
+			{
+				frame.copyTo(frameWithLogo);
+			}
+			// Counter for frames saved TODO: restore 0 at new film etc add only if needed!!!!!!!!
 			frameCounter += 1;
-			frame.copyTo(frameWithLogo);
 
 			if (currentMode.applyLogo)
 			{
+				cv::Mat4b logo = cv::imread(userPathLogo, cv::IMREAD_UNCHANGED);
+				resize(logo, logo, cv::Size(64, 64));
 				try {
 					if (restore)
 					{
@@ -282,6 +293,7 @@ int main(int argc, char* argv[])
 			int firstPanelHeight = margin + capHeight + 12 * padding;
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight - padding, padding);
+			// Left image
 			cvui::image(frame);
 			if (!currentMode.loadImage)
 			{
@@ -298,8 +310,13 @@ int main(int argc, char* argv[])
 			int secondPanelHeight = padding + capHeight + 12 * padding;
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight - padding, padding);
-			if (currentMode.applyLogo) {
+			if(currentMode.applyLogo || currentMode.previousSceneRequest || currentMode.nextSceneRequest)
+			{
 				cvui::image(frameWithLogo);
+			}
+			if (currentMode.applyLogo)
+			{
+				// Right image
 				currentMode.moveLogo = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
 				if (currentMode.moveLogo) {
 					if (isLogoMovingMessedUp) {
@@ -347,8 +364,8 @@ int main(int argc, char* argv[])
 			currentMode.pathFramesInput = cvui::checkbox("Path to frames folder: ", &currentMode.pathFramesInput);
 			cvui::iarea(pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight);
 			cvui::rect(gui, pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-			const char *userPatFramesC = userPathFrames.c_str();
-			cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPatFramesC);
+			const char *userPathFramesC = userPathFrames.c_str();
+			cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPathFramesC);
 			// if path to image
 			int pathToImageAreaX = pathPanelX + 7 * padding;
 			int pathToImageAreaY = pathPanelY + 4.6 * padding;
@@ -421,8 +438,29 @@ int main(int argc, char* argv[])
 					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
 					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
 				}
-
-				player::playerAction(&player::frameNum, player::playerSignal);
+				if (currentMode.previousSceneRequest)
+				{
+					// User new signal
+					if (!(player::playerSignal == PLAYER_STANDARD))
+						player::playerAction(&player::frameNum, player::playerSignal);
+					// Old signal restored if not paused
+					if (!(player::playerSignal == PLAYER_NONE))
+						player::playerAction(&player::frameNum, PLAYER_SCENE_L);
+				}
+				else if (currentMode.nextSceneRequest)
+				{
+					// User new signal
+					// Don't allow PLAYER_STANDARD
+					if (!(player::playerSignal == PLAYER_STANDARD))
+						player::playerAction(&player::frameNum, player::playerSignal);
+					// Old signal restored if not paused
+					if (!(player::playerSignal == PLAYER_NONE))
+						player::playerAction(&player::frameNum, PLAYER_SCENE_R);
+				}
+				else
+				{
+					player::playerAction(&player::frameNum, player::playerSignal);
+				}
 			}
 
 			if (!currentMode.modeVideo && !currentMode.loadImage)
