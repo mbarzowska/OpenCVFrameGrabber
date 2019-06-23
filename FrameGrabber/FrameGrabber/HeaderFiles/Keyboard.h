@@ -305,18 +305,18 @@ namespace keyboard
 
 			if (_currentMode->modeVideo) 
 			{
-				if (!(_currentMode->frameGrabbing) && CHECK_MSB(_userKeys[VK_S]))
+				if (!(_currentMode->frameGrabbingOnDemand) && CHECK_MSB(_userKeys[VK_S]))
 				{
+					_currentMode->frameGrabbingOnDemand = true;
 					_modeString += "Recording from video. ";
-					_currentMode->frameGrabbing = true;
 					_userKeys[VK_S] = 0x0;
 					_readKeys[VK_S] = 0x0;
 				}
 
-				if (_currentMode->frameGrabbing && CHECK_MSB(_userKeys[VK_E]))
+				if (_currentMode->frameGrabbingOnDemand && CHECK_MSB(_userKeys[VK_E]))
 				{
+					_currentMode->frameGrabbingOnDemand = false;
 					// modeString += "Stopped recording from video. ";
-					_currentMode->frameGrabbing = false;
 					_userKeys[VK_E] = 0x0;
 					_readKeys[VK_E] = 0x0;
 				}

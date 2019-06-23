@@ -14,13 +14,16 @@ struct modes
 	bool applyLogo;
 	bool moveLogo;
 	bool loadImage;
-	bool frameGrabbing;
+	bool frameGrabbingOnDemand;
 	bool pathLogoInput;
 	bool pathImageInput;
 	bool pathFramesInput;
 	bool pathVideoInput;
 	bool previousSceneRequest;
 	bool nextSceneRequest;
+	bool frameGrabbingFrameBased;
+	bool frameGrabbingTimeBased;
+	bool movieMaker;
 };
 
 struct logoMoveDirections

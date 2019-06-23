@@ -7,6 +7,7 @@
 #include "HeaderFiles/StringHelper.h"
 #include "HeaderFiles/Player.h"
 #include "HeaderFiles/Keyboard.h"
+#include <regex>
 
 using namespace std;
 
@@ -16,12 +17,13 @@ using namespace std;
 
 /* cvUI	related	*/
 /* on checkbox	*/
-
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
-/* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
+/* */ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
 /* */ bool isLogoMovingMessedUp, isImageLoaded;
 bool saveFrameToFile;
+
+bool isFramesFolderRead; string frameFolder;
 
 /* Matrices	*/
 cv::Mat frame;
@@ -64,7 +66,7 @@ string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -155,13 +157,13 @@ void modeUpdate(int requestedFPS)
 			&player::playerSignal, userPathVideo, modeString, \
 			&outputVideo, &cap, &capWidth, &capHeight, &firstFrame, &lastFrame);
 		// FrameGrabbing keyboard handler
-		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
+		if (currentMode.frameGrabbingOnDemand && currentMode.modeVideo && !currentMode.playVideo)
 		{
-			currentMode.frameGrabbing = false;
+			currentMode.frameGrabbingOnDemand = false;
 			modeString += "Video is not playing, can't save frames. ";
 		}
-		if (currentMode.frameGrabbing && !currentMode.modeVideo ||
-			currentMode.frameGrabbing && currentMode.modeVideo && currentMode.playVideo)
+		if (currentMode.frameGrabbingOnDemand && !currentMode.modeVideo ||
+			currentMode.frameGrabbingOnDemand && currentMode.modeVideo && currentMode.playVideo)
 		{
 			modeString += "Saving frames. ";
 		}
@@ -184,6 +186,23 @@ void exit(cv::VideoCapture obj)
 }
 
 int frameCounter = 0;
+
+std::vector<string> framesToJoin;
+
+void readDirectory(const std::string& name, std::vector<string>& v)
+{
+	std::string pattern(name);
+	pattern.append("\\*");
+	WIN32_FIND_DATA data;
+	HANDLE hFind;
+	if ((hFind = FindFirstFile(pattern.c_str(), &data)) != INVALID_HANDLE_VALUE) {
+		do {
+			if (regex_search(data.cFileName, std::regex("[0-9]+\.jpg")) == 1)
+				v.emplace_back(data.cFileName);
+		} while (FindNextFile(hFind, &data) != 0);
+		FindClose(hFind);
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -214,42 +233,74 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
-			if (currentMode.modeVideo)
+			if (currentMode.movieMaker)
 			{
-				cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
-				cap >> frame;
-			}
-			else if (currentMode.loadImage)
-			{
-				try
+				currentMode = { false, currentMode.modeVideo, \
+					false, false, currentMode.applyLogo, \
+					false, currentMode.loadImage, false, \
+					false, false, false, false, \
+					currentMode.previousSceneRequest, currentMode.nextSceneRequest, \
+					currentMode.frameGrabbingFrameBased, currentMode.frameGrabbingTimeBased, currentMode.movieMaker};
+				
+				if (!isFramesFolderRead)
 				{
-					if (!isImageLoaded)
+					frameFolder = userPathFrames;
+					readDirectory(frameFolder, framesToJoin);
+					if (framesToJoin.empty())
 					{
-						try
-						{
-							image = cv::imread(userPathImage);
-							int tmpRatio = image.rows / image.cols;
-							if (image.rows > frame.rows && image.cols > frame.cols)
-							{
-								cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
-							}
-							isImageLoaded = true;
-						}
-						catch (cv::Exception &e)
-						{
-							modeString += "Reading image error! ";
-						}
+						currentMode.movieMaker = false;
+						modeString += "No files found. ";
 					}
-					frame = image;
+					else
+					{
+						isFramesFolderRead = true;
+						outputVideo.open(
+							videoSavingPath + strhelp::createVideoName(),
+							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+							requestedFPS,
+							cv::Size(320, 240));
+					}
 				}
-				catch (cv::Exception &e)
+				
+				if (isFramesFolderRead)
 				{
-					modeString += "Reading image error! ";
-				}
+					for (int i = 0; i < framesToJoin.size(); i++)
+					{
+						cv::Mat tmpFrame = cv::imread(frameFolder + "\\" + framesToJoin[i]);
+						outputVideo.write(tmpFrame);
+					}
+					outputVideo.release();
+					currentMode.movieMaker = false;
+					currentMode.pathFramesInput = false;
+					currentMode.pathInput = false;
+					userPathFrames.clear();
+					framesToJoin.clear();
 			}
 			else
 			{
-				cap >> frame;
+				if (currentMode.modeVideo)
+				{
+					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
+					cap >> frame;
+				}
+				else if (currentMode.loadImage)
+				{
+					if (!isImageLoaded)
+					{
+						image = cv::imread(userPathImage);
+						int tmpRatio = image.rows / image.cols;
+						if (image.rows > frame.rows && image.cols > frame.cols)
+						{
+							cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+						}
+						isImageLoaded = true;
+					}
+					frame = image;
+				}
+				else
+				{
+					cap >> frame;
+				}
 			}
 			// For scene modes ifs
 			if (currentMode.previousSceneRequest)
@@ -310,8 +361,8 @@ int main(int argc, char* argv[])
 				catch (cv::Exception &e)
 				{
 					isLogoMovingMessedUp = true;
-					secondPanelAlertString = "Can't move logo any further!";
-					secondPanelAdditionString = "Restore previous position to continue.";
+					secondPanelLogoAlertString = "Can't move logo any further!";
+					secondPanelLogoAdditionString = "Restore previous position to continue.";
 				}
 			}
 
@@ -321,22 +372,40 @@ int main(int argc, char* argv[])
 			int menuPanelWidth = padding + menuWidth + padding;
 			int menuPanelHeight = margin + capHeight + 12 * padding;
 			cvui::rect(gui, menuPanelX, menuPanelY, menuPanelWidth, menuPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding);
+			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding / 2);
 			cvui::text("Current command:");
 			cvui::text(keyboard::currentCommand);
 			cvui::text("Menu");
+			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			if (!currentMode.loadImage)
 			{
 				currentMode.recording = cvui::checkbox("Record straight to video file", &currentMode.recording);
-				cvui::text("    Set FPS:");
+				cvui::text("Set FPS:");
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
+				cvui::text("Save video to frames:");
+				currentMode.frameGrabbingOnDemand = cvui::checkbox("On demand (must be running)", &currentMode.frameGrabbingOnDemand);
+				if (currentMode.modeVideo) 
+				{
+					// TODO
+					currentMode.frameGrabbingFrameBased = cvui::checkbox("Given frames", &currentMode.frameGrabbingFrameBased);
+					if (currentMode.frameGrabbingFrameBased)
+					{
+					}
+					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
+					if (currentMode.frameGrabbingTimeBased)
+					{
+					}
+				}
 			}
-			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
-			currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
-			// Get for every mode
 			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
-			if (!currentMode.loadImage) {
-				currentMode.frameGrabbing = cvui::checkbox("Save video to frames", &currentMode.frameGrabbing);
+			cvui::space(padding);
+			if (!userPathImage.empty())
+			{
+				currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
+			}
+			if (!userPathFrames.empty()) 
+			{
+				currentMode.movieMaker = cvui::checkbox("Join frames to video", &currentMode.movieMaker);
 			}
 			cvui::endColumn();
 
@@ -355,7 +424,7 @@ int main(int argc, char* argv[])
 			{
 				modeString += "Unable to load left frame! ";
 			}
-			if (!currentMode.loadImage)
+			if (currentMode.modeVideo)
 			{
 				cvui::text("Frame track bar:");
 				// Need to convert in that way, maybe put in the player to do it under the hood
@@ -385,10 +454,12 @@ int main(int argc, char* argv[])
 			{
 				// Right image
 				currentMode.moveLogo = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
-				if (currentMode.moveLogo) {
-					if (isLogoMovingMessedUp) {
-						cvui::text(secondPanelAlertString);
-						cvui::text(secondPanelAdditionString);
+				if (currentMode.moveLogo)
+				{
+					if (isLogoMovingMessedUp) 
+					{
+						cvui::text(secondPanelLogoAlertString);
+						cvui::text(secondPanelLogoAdditionString);
 					}
 					cvui::beginRow();
 					moveDirection.left = cvui::button(buttonWidth, buttonHeight, "LEFT");
@@ -451,7 +522,16 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
 			const char *userPathLogoC = userPathLogo.c_str();
 			cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathLogoC);
-
+			
+			int alertPanelX = menuPanelX;
+			int alertPanelY = cvUIWindowHeight - padding - margin;
+			int alertPanelWidth = cvUIWindowWidth - 2 * margin;
+			int alertPanelHeight = 1.5 * padding;
+			cvui::rect(gui, alertPanelX, alertPanelY, alertPanelWidth, alertPanelHeight, 0xDC4343, 0xDC4343);
+			cvui::beginColumn(gui, alertPanelX + padding, alertPanelY + padding / 2, alertPanelWidth - 2 * padding, alertPanelHeight - padding, padding / 2);
+			cvui::text("HERE");
+			cvui::endColumn();
+			
 			/*
 			if (currentMode.pathInput)
 			{
@@ -495,7 +575,8 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (!currentMode.frameGrabbing) {
+			if (!currentMode.frameGrabbingOnDemand)
+			{
 				frameGrabbingSessionId = strhelp::generateRandomString(5);
 				createFrameGrabbingFolderPath = true;
 			}
@@ -507,7 +588,6 @@ int main(int argc, char* argv[])
 				// TODO jesli zadanie nagraj od 1 klatki to 
 				// TODO		wykorzystanie nagrywania przedzialu klatkowego + pokazanie tego w 2 oknie
 				// TODO		przedzial czasowy nagrywania (czas * FPS = klatki)
-
 				if (currentMode.recording && currentMode.playVideo && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) {
 					try
 					{
@@ -520,23 +600,31 @@ int main(int argc, char* argv[])
 					}
 				}
 				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-				if (currentMode.frameGrabbing && currentMode.playVideo) {
-					try
+				if (currentMode.frameGrabbingOnDemand && currentMode.playVideo)
+				{
+          try
 					{
-						if (createFrameGrabbingFolderPath) {
-							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
-							CreateDirectory(framesSavingPath.c_str(), NULL);
-							createFrameGrabbingFolderPath = false;
-						}
+              if (createFrameGrabbingFolderPath) 
+              {
+                framesSavingPath = framesFolderPath + frameGrabbingSessionId;
+                CreateDirectory(framesSavingPath.c_str(), NULL);
+                createFrameGrabbingFolderPath = false;
+              }
 
-						if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-						else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
-					}
+              if (currentMode.applyLogo)
+              {
+                cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+              }
+              else
+              {
+                cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+              }
+          }
 					catch (cv::Exception &e)
 					{
 						modeString += "Error while frame grabbing! ";
 					}
-				}
+        }
 				if (currentMode.previousSceneRequest)
 				{
 					// User new signal
@@ -578,21 +666,22 @@ int main(int argc, char* argv[])
 				try
 				{
 					// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-					if (currentMode.frameGrabbing) {
-						if (createFrameGrabbingFolderPath) {
-							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
-							CreateDirectory(framesSavingPath.c_str(), NULL);
-							createFrameGrabbingFolderPath = false;
-						}
-
-						if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-						else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
-					}
-				}
-				catch (cv::Exception &e)
-				{
-					modeString += "Error while frame grabbing! ";
-				}
+          if (currentMode.frameGrabbingOnDemand)
+          {
+            if (createFrameGrabbingFolderPath) 
+            {
+              framesSavingPath = framesFolderPath + frameGrabbingSessionId;
+              CreateDirectory(framesSavingPath.c_str(), NULL);
+              createFrameGrabbingFolderPath = false;
+            }
+              if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
+              else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+            }
+         }
+         catch (cv::Exception &e)
+         {
+            modeString += "Error while frame grabbing! ";
+         }
 			}
 
 			// if (currentMode.loadImage)
