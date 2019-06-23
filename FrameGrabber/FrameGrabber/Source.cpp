@@ -7,6 +7,7 @@
 #include "HeaderFiles/StringHelper.h"
 #include "HeaderFiles/Player.h"
 #include "HeaderFiles/Keyboard.h"
+#include <regex>
 
 using namespace std;
 
@@ -21,6 +22,8 @@ using namespace std;
 /* */ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
 /* */ bool isLogoMovingMessedUp, isImageLoaded;
 bool saveFrameToFile;
+
+bool isFramesFolderRead; string frameFolder;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
@@ -61,7 +64,7 @@ string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false};
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false};
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -151,6 +154,23 @@ void exit(cv::VideoCapture obj)
 
 int frameCounter;
 
+std::vector<string> framesToJoin;
+
+void readDirectory(const std::string& name, std::vector<string>& v)
+{
+	std::string pattern(name);
+	pattern.append("\\*");
+	WIN32_FIND_DATA data;
+	HANDLE hFind;
+	if ((hFind = FindFirstFile(pattern.c_str(), &data)) != INVALID_HANDLE_VALUE) {
+		do {
+			if (regex_search(data.cFileName, std::regex("[0-9]+\.jpg")) == 1)
+				v.emplace_back(data.cFileName);
+		} while (FindNextFile(hFind, &data) != 0);
+		FindClose(hFind);
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	//TODO: find more elegant way to determine path
@@ -183,29 +203,53 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
-
-			if (currentMode.modeVideo)
+			if (currentMode.movieMaker)
 			{
-				cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
-				cap >> frame;
-			}
-			else if (currentMode.loadImage)
-			{
-				if (!isImageLoaded)
+				if (!isFramesFolderRead)
 				{
-					image = cv::imread(userPathImage);
-					int tmpRatio = image.rows / image.cols;
-					if (image.rows > frame.rows && image.cols > frame.cols)
-					{
-						cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
-					}
-					isImageLoaded = true;
+					frameFolder = userPathFrames;
+					readDirectory(frameFolder, framesToJoin);
+					isFramesFolderRead = true;
+					outputVideo.open(videoSavingPath + strhelp::createVideoName(), cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), requestedFPS, cv::Size(320, 240));
 				}
-				frame = image;
+				else
+				{
+					for (int i = 0; i < framesToJoin.size(); i++)
+					{
+						cv::Mat tmpFrame = cv::imread(frameFolder + "\\" + framesToJoin[i]);
+						outputVideo.write(tmpFrame);
+					}
+					outputVideo.release();
+					currentMode.movieMaker = false;
+					currentMode.pathFramesInput = false;
+					userPathFrames.clear();
+				}
 			}
 			else
 			{
-				cap >> frame;
+				if (currentMode.modeVideo)
+				{
+					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
+					cap >> frame;
+				}
+				else if (currentMode.loadImage)
+				{
+					if (!isImageLoaded)
+					{
+						image = cv::imread(userPathImage);
+						int tmpRatio = image.rows / image.cols;
+						if (image.rows > frame.rows && image.cols > frame.cols)
+						{
+							cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+						}
+						isImageLoaded = true;
+					}
+					frame = image;
+				}
+				else
+				{
+					cap >> frame;
+				}
 			}
 
 			frameCounter += 1;
@@ -287,6 +331,10 @@ int main(int argc, char* argv[])
 			if (!userPathImage.empty())
 			{
 				currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
+			}
+			if (!userPathFrames.empty()) 
+			{
+				currentMode.movieMaker = cvui::checkbox("Join frames to video", &currentMode.movieMaker);
 			}
 			cvui::endColumn();
 

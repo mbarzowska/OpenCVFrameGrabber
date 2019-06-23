@@ -23,6 +23,7 @@ struct modes
 	bool nextSceneRequest;
 	bool frameGrabbingFrameBased;
 	bool frameGrabbingTimeBased;
+	bool movieMaker;
 };
 
 struct logoMoveDirections
