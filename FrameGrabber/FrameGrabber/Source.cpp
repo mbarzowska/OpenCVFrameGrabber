@@ -30,6 +30,7 @@ cv::Mat lastFrame;
 cv::Mat frameWithLogo;
 cv::Mat image;
 cv::Mat3b roi;
+cv::Mat4b logo;
 
 /* Helpers and other variables */
 cv::VideoCapture cap;
@@ -70,15 +71,21 @@ struct logoMoveDirections moveDirection = { false, false, false, false };
 inline void openCamera()
 {
 	/* Open a camera for video capturing */
-	cap.open(0);
-
-	/* Set properties */
-	capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-	cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
-	cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
-	capWidth = capWidth / 2;
-	capHeight = capHeight / 2;
+	try
+	{
+		cap.open(0);
+		/* Set properties */
+		capWidth = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+		capHeight = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+		cap.set(cv::CAP_PROP_FRAME_WIDTH, capWidth / 2);
+		cap.set(cv::CAP_PROP_FRAME_HEIGHT, capHeight / 2);
+		capWidth = capWidth / 2;
+		capHeight = capHeight / 2;
+	}
+	catch (cv::Exception &e)
+	{
+		modeString += "Can't open the camera! ";
+	}
 }
 
 void modeUpdate(int requestedFPS)
@@ -129,7 +136,14 @@ void modeUpdate(int requestedFPS)
 			const auto outputPath = videoSavingPath + videoName;
 			const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
 			const auto size = cv::Size(320, 240);
-			outputVideo.open(outputPath, codec, requestedFPS, size);
+			try
+			{
+				outputVideo.open(outputPath, codec, requestedFPS, size);
+			}
+			catch (cv::Exception &e)
+			{
+				modeString += "Can't open video file! ";
+			}
 		}
 		// Keyboard handler for recording state
 		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
@@ -207,17 +221,31 @@ int main(int argc, char* argv[])
 			}
 			else if (currentMode.loadImage)
 			{
-				if (!isImageLoaded)
+				try
 				{
-					image = cv::imread(userPathImage);
-					int tmpRatio = image.rows / image.cols;
-					if (image.rows > frame.rows && image.cols > frame.cols)
+					if (!isImageLoaded)
 					{
-						cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+						try
+						{
+							image = cv::imread(userPathImage);
+							int tmpRatio = image.rows / image.cols;
+							if (image.rows > frame.rows && image.cols > frame.cols)
+							{
+								cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+							}
+							isImageLoaded = true;
+						}
+						catch (cv::Exception &e)
+						{
+							modeString += "Reading image error! ";
+						}
 					}
-					isImageLoaded = true;
+					frame = image;
 				}
-				frame = image;
+				catch (cv::Exception &e)
+				{
+					modeString += "Reading image error! ";
+				}
 			}
 			else
 			{
@@ -241,8 +269,15 @@ int main(int argc, char* argv[])
 
 			if (currentMode.applyLogo)
 			{
-				cv::Mat4b logo = cv::imread(userPathLogo, cv::IMREAD_UNCHANGED);
-				resize(logo, logo, cv::Size(64, 64));
+				try
+				{
+					logo = cv::imread(userPathLogo, cv::IMREAD_UNCHANGED);
+					resize(logo, logo, cv::Size(64, 64));
+				}
+				catch (cv::Exception &e)
+				{
+					modeString += "Reading logo error! ";
+				}
 				try {
 					if (restore)
 					{
@@ -312,7 +347,14 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight - padding, padding);
 			// Left image
-			cvui::image(frame);
+			try
+			{
+				cvui::image(frame);
+			}
+			catch (cv::Exception &e)
+			{
+				modeString += "Unable to load left frame! ";
+			}
 			if (!currentMode.loadImage)
 			{
 				cvui::text("Frame track bar:");
@@ -330,7 +372,14 @@ int main(int argc, char* argv[])
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight - padding, padding);
 			if(currentMode.applyLogo || currentMode.previousSceneRequest || currentMode.nextSceneRequest)
 			{
-				cvui::image(frameWithLogo);
+				try
+				{
+					cvui::image(frameWithLogo);
+				}
+				catch (cv::Exception &e)
+				{
+					modeString += "Unable to load right frame! ";
+				}
 			}
 			if (currentMode.applyLogo)
 			{
@@ -435,8 +484,15 @@ int main(int argc, char* argv[])
 
 			if (saveFrameToFile)
 			{
-				if (currentMode.applyLogo) { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params); }
-				else { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params); }
+				try
+				{
+					if (currentMode.applyLogo) { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params); }
+					else { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params); }
+				}
+				catch (cv::Exception &e)
+				{
+					modeString += "Error while saving to image! ";
+				}
 			}
 
 			if (!currentMode.frameGrabbing) {
@@ -453,20 +509,33 @@ int main(int argc, char* argv[])
 				// TODO		przedzial czasowy nagrywania (czas * FPS = klatki)
 
 				if (currentMode.recording && currentMode.playVideo && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) {
-					if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
-					else { outputVideo.write(frame); }
+					try
+					{
+						if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
+						else { outputVideo.write(frame); }
+					}
+					catch (cv::Exception &e)
+					{
+						modeString += "Error while recording! ";
+					}
 				}
-
 				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
 				if (currentMode.frameGrabbing && currentMode.playVideo) {
-					if (createFrameGrabbingFolderPath) {
-						framesSavingPath = framesFolderPath + frameGrabbingSessionId;
-						CreateDirectory(framesSavingPath.c_str(), NULL);
-						createFrameGrabbingFolderPath = false;
-					}
+					try
+					{
+						if (createFrameGrabbingFolderPath) {
+							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
+							CreateDirectory(framesSavingPath.c_str(), NULL);
+							createFrameGrabbingFolderPath = false;
+						}
 
-					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+						if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
+						else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+					}
+					catch (cv::Exception &e)
+					{
+						modeString += "Error while frame grabbing! ";
+					}
 				}
 				if (currentMode.previousSceneRequest)
 				{
@@ -495,21 +564,34 @@ int main(int argc, char* argv[])
 
 			if (!currentMode.modeVideo && !currentMode.loadImage)
 			{
-				if (currentMode.recording) {
-					if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
-					else { outputVideo.write(frame); }
-				}
-
-				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-				if (currentMode.frameGrabbing) {
-					if (createFrameGrabbingFolderPath) {
-						framesSavingPath = framesFolderPath + frameGrabbingSessionId;
-						CreateDirectory(framesSavingPath.c_str(), NULL);
-						createFrameGrabbingFolderPath = false;
+				try
+				{
+					if (currentMode.recording) {
+						if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
+						else { outputVideo.write(frame); }
 					}
+				}
+				catch (cv::Exception &e)
+				{
+					modeString += "Error while recording! ";
+				}
+				try
+				{
+					// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
+					if (currentMode.frameGrabbing) {
+						if (createFrameGrabbingFolderPath) {
+							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
+							CreateDirectory(framesSavingPath.c_str(), NULL);
+							createFrameGrabbingFolderPath = false;
+						}
 
-					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+						if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
+						else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+					}
+				}
+				catch (cv::Exception &e)
+				{
+					modeString += "Error while frame grabbing! ";
 				}
 			}
 
@@ -521,6 +603,7 @@ int main(int argc, char* argv[])
 		}
 		catch (cv::Exception &e)
 		{
+			modeString += "Some error(s) has occured. ";
 			_getch();
 			exit(cap);
 			getchar();

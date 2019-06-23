@@ -349,15 +349,22 @@ namespace keyboard
 					_outputVideo->release();
 					_cap->open(_userPathVideo);
 					// Set max and starting frames
-					*frameNum = 0;
-					*frameMax = static_cast<long long int>(_cap->get(cv::CAP_PROP_FRAME_COUNT)) - 1; // -1 !!!!
-					// Get first and last frame
-					_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
-					_cap->read(*_firstFrame);
-					_cap->set(cv::CAP_PROP_POS_FRAMES, *frameMax);
-					_cap->read(*_lastFrame);
-					_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
-					// _modeString = "Video mode | ";
+					if (_cap->isOpened())
+					{
+						*frameNum = 0;
+						*frameMax = static_cast<long long int>(_cap->get(cv::CAP_PROP_FRAME_COUNT)) - 1; // -1 !!!!
+						// Get first and last frame
+						_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
+						_cap->read(*_firstFrame);
+						_cap->set(cv::CAP_PROP_POS_FRAMES, *frameMax);
+						_cap->read(*_lastFrame);
+						_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
+						// _modeString = "Video mode | ";
+					}
+					else
+					{
+						_modeString += "Can't open video file! ";
+					}
 				}
 				catch (cv::Exception &e)
 				{
@@ -371,14 +378,21 @@ namespace keyboard
 				*frameMax = 1;
 				// cap.release();
 				/* Open a camera for video capturing */
-				_cap->open(0);
-				/* Set properties */
-				*capWidth = _cap->get(cv::CAP_PROP_FRAME_WIDTH);
-				*capHeight = _cap->get(cv::CAP_PROP_FRAME_HEIGHT);
-				_cap->set(cv::CAP_PROP_FRAME_WIDTH, *capWidth / 2);
-				_cap->set(cv::CAP_PROP_FRAME_HEIGHT, *capHeight / 2);
-				*capWidth = *capWidth / 2;
-				*capHeight = *capHeight / 2;
+				try
+				{
+					_cap->open(0);
+					/* Set properties */
+					*capWidth = _cap->get(cv::CAP_PROP_FRAME_WIDTH);
+					*capHeight = _cap->get(cv::CAP_PROP_FRAME_HEIGHT);
+					_cap->set(cv::CAP_PROP_FRAME_WIDTH, *capWidth / 2);
+					_cap->set(cv::CAP_PROP_FRAME_HEIGHT, *capHeight / 2);
+					*capWidth = *capWidth / 2;
+					*capHeight = *capHeight / 2;
+				}
+				catch (cv::Exception &e)
+				{
+					_modeString += "Can't open the camera! ";
+				}
 				// _modeString = "Recording mode | ";
 			}
 			_userKeys[VK_V] = 0x0;
