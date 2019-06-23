@@ -64,7 +64,7 @@ string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false};
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -205,14 +205,34 @@ int main(int argc, char* argv[])
 		{
 			if (currentMode.movieMaker)
 			{
+				currentMode = { false, currentMode.modeVideo, \
+					false, false, currentMode.applyLogo, \
+					false, currentMode.loadImage, false, \
+					false, false, false, false, \
+					currentMode.previousSceneRequest, currentMode.nextSceneRequest, \
+					currentMode.frameGrabbingFrameBased, currentMode.frameGrabbingTimeBased, currentMode.movieMaker};
+				
 				if (!isFramesFolderRead)
 				{
 					frameFolder = userPathFrames;
 					readDirectory(frameFolder, framesToJoin);
-					isFramesFolderRead = true;
-					outputVideo.open(videoSavingPath + strhelp::createVideoName(), cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), requestedFPS, cv::Size(320, 240));
+					if (framesToJoin.empty())
+					{
+						currentMode.movieMaker = false;
+						modeString += "No files found. ";
+					}
+					else
+					{
+						isFramesFolderRead = true;
+						outputVideo.open(
+							videoSavingPath + strhelp::createVideoName(),
+							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+							requestedFPS,
+							cv::Size(320, 240));
+					}
 				}
-				else
+				
+				if (isFramesFolderRead)
 				{
 					for (int i = 0; i < framesToJoin.size(); i++)
 					{
@@ -222,7 +242,9 @@ int main(int argc, char* argv[])
 					outputVideo.release();
 					currentMode.movieMaker = false;
 					currentMode.pathFramesInput = false;
+					currentMode.pathInput = false;
 					userPathFrames.clear();
+					framesToJoin.clear();
 				}
 			}
 			else
