@@ -15,7 +15,7 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/ 
+/* on checkbox	*/
 
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
@@ -96,7 +96,7 @@ void modeUpdate(int requestedFPS)
 	if (currentMode.pathInput)
 	{
 		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, \
-								   userPathVideo, userPathFrames, userPathImage, userPathLogo);
+			userPathVideo, userPathFrames, userPathImage, userPathLogo);
 	}
 	else
 	{
@@ -112,13 +112,13 @@ void modeUpdate(int requestedFPS)
 		}
 		// Keyboard handler for recording state
 		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
-									    &currentMode, modeString,
-										&outputVideo);
+			&currentMode, modeString,
+			&outputVideo);
 		// Keyboard handler for video state
 		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
-									&currentMode, &player::frameNum, &player::frameMax, \
-									&player::playerSignal, userPathVideo, modeString, \
-									&outputVideo, &cap, &capWidth, &capHeight);
+			&currentMode, &player::frameNum, &player::frameMax, \
+			&player::playerSignal, userPathVideo, modeString, \
+			&outputVideo, &cap, &capWidth, &capHeight);
 		// FrameGrabbing keyboard handler
 		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
 		{
@@ -134,8 +134,8 @@ void modeUpdate(int requestedFPS)
 		}
 		// Logo keyboard handler
 		keyboard::logoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
-								   &currentMode, &moveDirection, \
-								   &logoX, &logoY);
+			&currentMode, &moveDirection, \
+			&logoX, &logoY);
 	}
 	// Clear KeyboardState
 	keyboard::clearKeyboard();
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
 					int tmpRatio = image.rows / image.cols;
 					if (image.rows > frame.rows && image.cols > frame.cols)
 					{
-						cv::resize(image, image, cv::Size(image.cols / tmpRatio,frame.rows));
+						cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
 					}
 					isImageLoaded = true;
 				}
@@ -270,8 +270,10 @@ int main(int argc, char* argv[])
 			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
 			// Get for every mode
-				saveFrameToFile = cvui::button(buttonWidth * 1.5, buttonHeight, "Save to file");
-			currentMode.frameGrabbing = cvui::checkbox("Save video to files", &currentMode.frameGrabbing);
+			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
+			if (!currentMode.loadImage) {
+				currentMode.frameGrabbing = cvui::checkbox("Save video to frames", &currentMode.frameGrabbing);
+			}
 			cvui::endColumn();
 
 			int firstPanelX = margin + padding + menuWidth + 2 * padding;
@@ -318,7 +320,7 @@ int main(int argc, char* argv[])
 				}
 			}
 			cvui::endColumn();
-			
+
 			int pathPanelX = menuPanelX;
 			int pathPanelY = menuPanelY + menuPanelHeight + padding;
 			int pathPanelWidth = cvUIWindowWidth - 2 * margin;
@@ -374,101 +376,77 @@ int main(int argc, char* argv[])
 				//	userPath += userChar;
 				//	userChar = 0;
 				//}
-				// TODO: Zapanowac nad menu +1
-				if (currentMode.loadImage)
-				{
-					}
-				else
-				{
-					cvui::iarea(pathPanelX + padding, pathPanelY + 2 * padding, pathPanelWidth - 2 * padding, padding);
-					cvui::rect(gui, pathPanelX + padding, pathPanelY + 2 * padding, pathPanelWidth - 2 * padding, padding, 0x4d4d4d, 0x373737);
-				}
 				const char *userPathC = userPath.c_str();
 				cvui::text(userPathC);
 			}
 			*/
 			cvui::endColumn();
-			
+
 			cvui::imshow(CVUI_WINDOW_NAME, gui);
 
 			modeUpdate(requestedFPS);
+
+			if (saveFrameToFile)
+			{
+				if (currentMode.applyLogo) { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params); }
+				else { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params); }
+			}
 
 			if (!currentMode.frameGrabbing) {
 				frameGrabbingSessionId = strhelp::generateRandomString(5);
 				createFrameGrabbingFolderPath = true;
 			}
 
-			// TODO wiadomosc, obostrzenia i porzadek
-			// TODO jesli video nie jest odtwarzane, wyswietl wiadomosc
-			// TODO a jesli od 1 klatki? start zapisu video do pliku razem z zadaniem odtworzenia? 
-			if (!currentMode.modeVideo && currentMode.frameGrabbing ||
-				currentMode.modeVideo && currentMode.playVideo && currentMode.frameGrabbing)
-			{
-				if (createFrameGrabbingFolderPath)
-				{
-					framesSavingPath =  framesFolderPath + frameGrabbingSessionId;
-					CreateDirectory(framesSavingPath.c_str(), NULL);
-					createFrameGrabbingFolderPath = false;
-				}
-
-				if (currentMode.applyLogo)
-				{
-					cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
-				}
-				else
-				{
-					cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
-				}
-			}
-
-			if (saveFrameToFile)
-			{
-				if (currentMode.applyLogo)
-				{
-					cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params);
-				}
-				else
-				{
-					cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params);
-				}
-			}
-			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
-				/*if (currentMode.recording)
-				{
-					if (savedoklatekmode)
-					{
-					/// save do klatki
-				}*/
-				if (currentMode.playVideo && currentMode.recording && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) // TODO: Mode logoMode?
-				{
-					if (currentMode.applyLogo)
-					{
-						outputVideo.write(frameWithLogo);
-					}
-					else
-					{
-						outputVideo.write(frame);
-					}
+				// TODO zapetlanie filmu na zadanie (continuous loop)?
+				// TODO wznowienie filmu na przycisk, pauza na przycisk?
+				// TODO jesli zadanie nagraj od 1 klatki to 
+				// TODO		wykorzystanie nagrywania przedzialu klatkowego + pokazanie tego w 2 oknie
+				// TODO		przedzial czasowy nagrywania (czas * FPS = klatki)
+
+				if (currentMode.recording && currentMode.playVideo && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) {
+					if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
+					else { outputVideo.write(frame); }
 				}
-				printf("%d\n", player::frameNum);
+
+				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
+				if (currentMode.frameGrabbing && currentMode.playVideo) {
+					if (createFrameGrabbingFolderPath) {
+						framesSavingPath = framesFolderPath + frameGrabbingSessionId;
+						CreateDirectory(framesSavingPath.c_str(), NULL);
+						createFrameGrabbingFolderPath = false;
+					}
+
+					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
+					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+				}
+
 				player::playerAction(&player::frameNum, player::playerSignal);
 			}
-			else
+
+			if (!currentMode.modeVideo && !currentMode.loadImage)
 			{
-				if (currentMode.recording)
-				{
-					if (currentMode.applyLogo)
-					{
-						outputVideo.write(frameWithLogo);
+				if (currentMode.recording) {
+					if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
+					else { outputVideo.write(frame); }
+				}
+
+				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
+				if (currentMode.frameGrabbing) {
+					if (createFrameGrabbingFolderPath) {
+						framesSavingPath = framesFolderPath + frameGrabbingSessionId;
+						CreateDirectory(framesSavingPath.c_str(), NULL);
+						createFrameGrabbingFolderPath = false;
 					}
-					else 
-					{
-						outputVideo.write(frame);
-					}
+
+					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
+					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
 				}
 			}
+
+			// if (currentMode.loadImage)
+			// TODO: zablokowac skroty klawiszowe jesli nie sa zablokowane! 
 
 			//TODO: Eventually get rid of it
 			cout << modeString << endl;

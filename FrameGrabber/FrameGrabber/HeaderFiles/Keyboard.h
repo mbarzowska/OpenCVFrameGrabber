@@ -42,22 +42,22 @@ namespace keyboard
 	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode);
 
 	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-						  std::string& _userPathVideo, std::string& _userPathFrames, \
-						  std::string& _userPathImage, std::string& _userPathLogo);
+		std::string& _userPathVideo, std::string& _userPathFrames, \
+		std::string& _userPathImage, std::string& _userPathLogo);
 
 	void recordingModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-							   std::string& _modeString, \
-							   cv::VideoWriter *_outputVideo);
+		std::string& _modeString, \
+		cv::VideoWriter *_outputVideo);
 
 	void videoModeKeyboard(BYTE * _readKeys, BYTE * _userKeys, modes * _currentMode, \
-						   long long int * frameNum, long long int * frameMax, int * playerSignal, \
-						   std::string & _userPath, std::string & _modeString, \
-						   cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-						   double * capWidth, double * capHeight);
+		long long int * frameNum, long long int * frameMax, int * playerSignal, \
+		std::string & _userPath, std::string & _modeString, \
+		cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
+		double * capWidth, double * capHeight);
 
 	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-						  logoMoveDirections *_moveDirection, \
-						  int *_logoX, int *_logoY);
+		logoMoveDirections *_moveDirection, \
+		int *_logoX, int *_logoY);
 
 }
 
@@ -172,8 +172,8 @@ namespace keyboard
 	}
 
 	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-						  std::string& _userPathVideo, std::string& _userPathFrames, \
-						  std::string& _userPathImage, std::string& _userPathLogo)
+		std::string& _userPathVideo, std::string& _userPathFrames, \
+		std::string& _userPathImage, std::string& _userPathLogo)
 	{
 		if (_currentMode->pathInput)
 		{
@@ -217,36 +217,56 @@ namespace keyboard
 	}
 
 	void recordingModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-						       std::string& _modeString, \
-							   cv::VideoWriter *_outputVideo)
+		std::string& _modeString, \
+		cv::VideoWriter *_outputVideo)
 	{
 		if (!(_currentMode->loadImage))
 		{
-			if (!(_currentMode->recording) && CHECK_MSB(_userKeys[VK_S]))
+			if (!(_currentMode->modeVideo))
 			{
-				_currentMode->recording = true;
-				_modeString = "To video file";
-				_userKeys[VK_S] = 0x0;
-				_readKeys[VK_S] = 0x0;
+				if (!(_currentMode->recording) && CHECK_MSB(_userKeys[VK_S]))
+				{
+					_currentMode->recording = true;
+					_modeString = "To video file";
+					_userKeys[VK_S] = 0x0;
+					_readKeys[VK_S] = 0x0;
+				}
+				if ((_currentMode->recording && CHECK_MSB(_userKeys[VK_E])) ||
+					!_currentMode->recording)
+				{
+					_currentMode->recording = false;
+					_modeString = "Stopped";
+					_outputVideo->release();
+					_userKeys[VK_E] = 0x0;
+					_readKeys[VK_E] = 0x0;
+				}
 			}
-			if ((_currentMode->recording && CHECK_MSB(_userKeys[VK_E])) ||
-				!_currentMode->recording)
+
+			if (_currentMode->modeVideo) 
 			{
-				_currentMode->recording = false;
-				_modeString = "Stopped";
-				_outputVideo->release();
-				_userKeys[VK_E] = 0x0;
-				_readKeys[VK_E] = 0x0;
+				if (!(_currentMode->frameGrabbing) && CHECK_MSB(_userKeys[VK_S]))
+				{
+					_currentMode->frameGrabbing = true;
+					_userKeys[VK_S] = 0x0;
+					_readKeys[VK_S] = 0x0;
+				}
+
+				if (_currentMode->frameGrabbing && CHECK_MSB(_userKeys[VK_E]))
+				{
+					_currentMode->frameGrabbing = false;
+					_userKeys[VK_E] = 0x0;
+					_readKeys[VK_E] = 0x0;
+				}
 			}
 		}
 		return;
 	}
 
 	void videoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-						   long long int *frameNum, long long int *frameMax, int *playerSignal, \
-						   std::string& _userPathVideo, std::string& _modeString, \
-						   cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-						   double *capWidth, double *capHeight)
+		long long int *frameNum, long long int *frameMax, int *playerSignal, \
+		std::string& _userPathVideo, std::string& _modeString, \
+		cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
+		double *capWidth, double *capHeight)
 	{
 		if (CHECK_MSB(_userKeys[VK_V]))
 		{
@@ -393,8 +413,8 @@ namespace keyboard
 	}
 
 	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-					      logoMoveDirections *_moveDirection, \
-						  int *_logoX, int *_logoY)
+		logoMoveDirections *_moveDirection, \
+		int *_logoX, int *_logoY)
 	{
 		if (_currentMode->applyLogo)
 		{
