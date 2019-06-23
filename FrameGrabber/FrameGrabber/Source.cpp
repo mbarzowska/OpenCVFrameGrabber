@@ -16,9 +16,6 @@ using namespace std;
 
 /* cvUI	related	*/
 /* on checkbox	*/ 
-bool isRecordingModeEnabled = true;
-bool isPathInputModeEnabled = false;
-bool isLogoModeEnabled, isMoveLogoModeEnabled, isImageModeEnabled, isFrameGrabbingModeEnabled;
 
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
@@ -49,7 +46,6 @@ int buttonHeight = 30;
 string imagesSavingPath;
 string framesFolderPath;
 string framesSavingPath;
-bool isVideoPathInputModeEnabled, isFramesPathInputModeEnabled, isImagePathInputModeEnabled, isLogoPathInputModeEnabled;
 
 /* Image saving */
 vector<int> compression_params;
@@ -61,7 +57,7 @@ string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -90,16 +86,16 @@ void modeUpdate(int requestedFPS)
 	// Clear command input with Q
 	keyboard::clearCommands(keyboard::readKeys, keyboard::userKeys);
 	// Check for input mode
-	keyboard::pathInputModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, &isPathInputModeEnabled);
+	keyboard::pathInputModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode);
 	// Standard flow
-	if (isPathInputModeEnabled)
+	if (currentMode.pathInput)
 	{
 		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, userPath);
 	}
 	else
 	{
-		if ((!outputVideo.isOpened() && isRecordingModeEnabled && !currentMode.stop && !currentMode.modeVideo) ||
-			(!outputVideo.isOpened() && isRecordingModeEnabled && currentMode.modeVideo && currentMode.playVideo))
+		if ((!outputVideo.isOpened() && currentMode.recording && !currentMode.stop && !currentMode.modeVideo) ||
+			(!outputVideo.isOpened() && currentMode.recording && currentMode.modeVideo && currentMode.playVideo))
 		{
 			videoName = strhelp::createVideoName();
 			const auto outputPath = videoSavingPath + videoName;
@@ -110,7 +106,7 @@ void modeUpdate(int requestedFPS)
 		}
 		// Keyboard handler for recording state
 		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
-									    &currentMode, &isRecordingModeEnabled, modeString,
+									    &currentMode, modeString,
 										&outputVideo);
 		// Keyboard handler for video state
 		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
@@ -118,26 +114,22 @@ void modeUpdate(int requestedFPS)
 									&player::playerSignal, userPath, modeString, \
 									&outputVideo, &cap, &capWidth, &capHeight);
 		// FrameGrabbing keyboard handler
-		if (isFrameGrabbingModeEnabled && currentMode.modeVideo && !currentMode.playVideo)
+		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
 		{
-			currentMode.frameGrabbing = false;
 			//TODO in GUI
+			currentMode.frameGrabbing = false;
 			cout << "video not playing, cant save frames" << endl;
 		}
-		if (isFrameGrabbingModeEnabled && !currentMode.modeVideo ||
-			isFrameGrabbingModeEnabled && currentMode.modeVideo && currentMode.playVideo)
+		if (currentMode.frameGrabbing && !currentMode.modeVideo ||
+			currentMode.frameGrabbing && currentMode.modeVideo && currentMode.playVideo)
 		{
-			currentMode.frameGrabbing = true;
 			//TODO in GUI
 			cout << "can save frames" << endl;
 		}
 		// Logo keyboard handler
 		keyboard::logoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
 								   &currentMode, &moveDirection, \
-								   &isLogoModeEnabled, &isMoveLogoModeEnabled, \
 								   &logoX, &logoY);
-		// Image handler
-		currentMode.loadImage = isImageModeEnabled;
 	}
 	// Clear KeyboardState
 	keyboard::clearKeyboard();
@@ -263,20 +255,20 @@ int main(int argc, char* argv[])
 			cvui::text("Current command:");
 			cvui::text(keyboard::currentCommand);
 			cvui::text("Menu");
-			if (!isImageModeEnabled)
+			if (!currentMode.loadImage)
 			{
-				isRecordingModeEnabled = cvui::checkbox("Record straight to video file", &currentMode.recording);
+				currentMode.recording = cvui::checkbox("Record straight to video file", &currentMode.recording);
 				cvui::text("    Set FPS:");
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
 
 			}
-			isLogoModeEnabled = cvui::checkbox("Put logo on", &currentMode.applyLogo);
-			isImageModeEnabled = cvui::checkbox("Show image", &currentMode.loadImage);
-			if (isImageModeEnabled)
+			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
+			currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
+			if (currentMode.loadImage)
 			{
 				saveToFile = cvui::button(buttonWidth * 1.5, buttonHeight, "Save to file");
 			}
-			isFrameGrabbingModeEnabled = cvui::checkbox("Save video to files", &currentMode.frameGrabbing);
+			currentMode.frameGrabbing = cvui::checkbox("Save video to files", &currentMode.frameGrabbing);
 			cvui::endColumn();
 
 			int firstPanelX = margin + padding + menuWidth + 2 * padding;
@@ -286,7 +278,7 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight - padding, padding);
 			cvui::image(frame);
-			if (!isImageModeEnabled)
+			if (!currentMode.loadImage)
 			{
 				cvui::text("Frame track bar:");
         // Need to convert in that way, maybe put in the player to do it under the hood
@@ -301,10 +293,10 @@ int main(int argc, char* argv[])
 			int secondPanelHeight = padding + capHeight + 12 * padding;
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight - padding, padding);
-			if (isLogoModeEnabled) {
+			if (currentMode.applyLogo) {
 				cvui::image(frameWithLogo);
-				isMoveLogoModeEnabled = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
-				if (isMoveLogoModeEnabled) {
+				currentMode.moveLogo = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
+				if (currentMode.moveLogo) {
 					if (isLogoMovingMessedUp) {
 						cvui::text(secondPanelAlertString);
 						cvui::text(secondPanelAdditionString);
@@ -330,8 +322,8 @@ int main(int argc, char* argv[])
 			int pathPanelHeight = cvUIWindowHeight - margin - menuPanelHeight - padding - margin;
 			cvui::rect(gui, pathPanelX, pathPanelY, pathPanelWidth, pathPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, pathPanelX + padding, pathPanelY + padding, pathPanelWidth - 2 * padding, pathPanelHeight - padding, padding / 2);
-			isPathInputModeEnabled = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
-			if(isPathInputModeEnabled)
+			currentMode.pathInput = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
+			if(currentMode.pathInput)
 			{
 				int pathAreaHeight = padding;
 				int offsetX = 6, offsetY = 4;
@@ -339,8 +331,8 @@ int main(int argc, char* argv[])
 				int pathToVideoAreaX = pathPanelX + 7 * padding;
 				int pathToVideoAreaY = pathPanelY + 2 * padding;
 				int pathToVideoAreaWidth = pathPanelWidth - 8 * padding;
-				isVideoPathInputModeEnabled = cvui::checkbox("Path to video: ", &isVideoPathInputModeEnabled);
-				if (isVideoPathInputModeEnabled) {
+				currentMode.pathVideoInput = cvui::checkbox("Path to video: ", &currentMode.pathVideoInput);
+				if (currentMode.pathVideoInput) {
 					cout << "TEST" << endl;
 					cvui::iarea(pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
@@ -354,8 +346,8 @@ int main(int argc, char* argv[])
 				int pathToFramesAreaX = pathPanelX + 9.5 * padding;
 				int pathToFramesAreaY = pathPanelY + 3.3 * padding;
 				int pathToFramesAreaWidth = pathPanelWidth - 10.5 * padding;
-				isFramesPathInputModeEnabled = cvui::checkbox("Path to frames folder: ", &isFramesPathInputModeEnabled);
-				if (isFramesPathInputModeEnabled) 
+				currentMode.pathFramesInput = cvui::checkbox("Path to frames folder: ", &currentMode.pathFramesInput);
+				if (currentMode.pathFramesInput) 
 				{
 					cvui::iarea(pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
@@ -366,8 +358,8 @@ int main(int argc, char* argv[])
 				int pathToImageAreaX = pathPanelX + 7 * padding;
 				int pathToImageAreaY = pathPanelY + 4.6 * padding;
 				int pathToImageAreaWidth = pathPanelWidth - 8 * padding;
-				isImagePathInputModeEnabled = cvui::checkbox("Path to image: ", &isImagePathInputModeEnabled);
-				if (isImagePathInputModeEnabled) 
+				currentMode.pathImageInput = cvui::checkbox("Path to image: ", &currentMode.pathImageInput);
+				if (currentMode.pathImageInput) 
 				{
 					cvui::iarea(pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
@@ -378,8 +370,8 @@ int main(int argc, char* argv[])
 				int pathToLogoAreaX = pathPanelX + 6.5 * padding;
 				int pathToLogoAreaY = pathPanelY + 5.9 * padding;
 				int pathToLogoAreaWidth = pathPanelWidth - 7.5 * padding;
-				isLogoPathInputModeEnabled = cvui::checkbox("Path to logo: ", &isLogoPathInputModeEnabled);
-				if (isLogoPathInputModeEnabled)
+				currentMode.pathLogoInput = cvui::checkbox("Path to logo: ", &currentMode.pathLogoInput);
+				if (currentMode.pathLogoInput)
 				{
 					cvui::iarea(pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
@@ -389,7 +381,7 @@ int main(int argc, char* argv[])
 			}
 
 			/*
-			if (isPathInputModeEnabled)
+			if (currentMode.pathInput)
 			{
 				//if (userChar != 0)
 				//{
@@ -397,7 +389,7 @@ int main(int argc, char* argv[])
 				//	userChar = 0;
 				//}
 				// TODO: Zapanowac nad menu +1
-				if (isImageModeEnabled)
+				if (currentMode.loadImage)
 				{
 					}
 				else
@@ -423,8 +415,8 @@ int main(int argc, char* argv[])
 			// TODO wiadomosc, obostrzenia i porzadek
 			// TODO jesli video nie jest odtwarzane, wyswietl wiadomosc
 			// TODO a jesli od 1 klatki? start zapisu video do pliku razem z zadaniem odtworzenia? 
-			if (!currentMode.modeVideo && isFrameGrabbingModeEnabled ||
-				currentMode.modeVideo && currentMode.playVideo && isFrameGrabbingModeEnabled)
+			if (!currentMode.modeVideo && currentMode.frameGrabbing ||
+				currentMode.modeVideo && currentMode.playVideo && currentMode.frameGrabbing)
 			{
 				if (createFrameGrabbingFolderPath)
 				{
@@ -433,7 +425,7 @@ int main(int argc, char* argv[])
 					createFrameGrabbingFolderPath = false;
 				}
 
-				if (isLogoModeEnabled)
+				if (currentMode.applyLogo)
 				{
 					cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
 				}
@@ -445,7 +437,7 @@ int main(int argc, char* argv[])
 
 			if (saveToFile)
 			{
-				if (isLogoModeEnabled)
+				if (currentMode.applyLogo)
 				{
 					cv::imwrite(videoSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params);
 				}
@@ -459,7 +451,7 @@ int main(int argc, char* argv[])
 			{
 				if (currentMode.playVideo && currentMode.recording && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) // TODO: Mode logoMode?
 				{
-					if (isLogoModeEnabled)
+					if (currentMode.applyLogo)
 					{
 						outputVideo.write(frameWithLogo);
 					}
@@ -475,7 +467,7 @@ int main(int argc, char* argv[])
 			{
 				if (currentMode.recording)
 				{
-					if (isLogoModeEnabled)
+					if (currentMode.applyLogo)
 					{
 						outputVideo.write(frameWithLogo);
 					}

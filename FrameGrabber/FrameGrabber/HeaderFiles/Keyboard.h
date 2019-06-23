@@ -44,7 +44,7 @@ namespace keyboard
 	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, std::string& _userPath);
 
 	void recordingModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-							   bool *_isRecordingModeEnabled, std::string& _modeString, \
+							   std::string& _modeString, \
 							   cv::VideoWriter *_outputVideo);
 
 	void videoModeKeyboard(BYTE * _readKeys, BYTE * _userKeys, modes * _currentMode, \
@@ -55,7 +55,6 @@ namespace keyboard
 
 	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 						  logoMoveDirections *_moveDirection, \
-						  bool *_isLogoModeEnabled, bool *_isMoveLogoModeEnabled, \
 						  int *_logoX, int *_logoY);
 
 }
@@ -157,11 +156,10 @@ namespace keyboard
 		return;
 	}
 
-	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, bool *_isPathInputModeEnabled)
+	void pathInputModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode)
 	{
 		if (CHECK_MSB(_userKeys[VK_P]))
 		{
-			*_isPathInputModeEnabled = !(*_isPathInputModeEnabled);
 			_currentMode->pathInput = !(_currentMode->pathInput);
 			_userKeys[VK_P] = 0x0;
 			_readKeys[VK_P] = 0x0;
@@ -196,21 +194,20 @@ namespace keyboard
 	}
 
 	void recordingModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
-						       bool *_isRecordingModeEnabled, std::string& _modeString, \
+						       std::string& _modeString, \
 							   cv::VideoWriter *_outputVideo)
 	{
-		if ((CHECK_MSB(_userKeys[VK_S]) || *_isRecordingModeEnabled && !_currentMode->modeVideo) ||
-			(*_isRecordingModeEnabled && _currentMode->modeVideo && _currentMode->playVideo))
+		if ((CHECK_MSB(_userKeys[VK_S]) || !_currentMode->modeVideo) ||
+			(_currentMode->modeVideo && _currentMode->playVideo))
 		{
 			_currentMode->recording = true;
 			_currentMode->stop = false;
-			*_isRecordingModeEnabled = true;
 			_modeString = "To video file";
 			_userKeys[VK_S] = 0x0;
 			_readKeys[VK_S] = 0x0;
 		}
-		if ((CHECK_MSB(_userKeys[VK_E]) || !(*_isRecordingModeEnabled) && !_currentMode->modeVideo) ||
-			(!(*_isRecordingModeEnabled) && !_currentMode->playVideo))
+		if ((CHECK_MSB(_userKeys[VK_E]) || !_currentMode->modeVideo) ||
+			(!_currentMode->playVideo))
 		{
 			_currentMode->recording = false;
 			_currentMode->stop = true;
@@ -375,15 +372,12 @@ namespace keyboard
 
 	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 					      logoMoveDirections *_moveDirection, \
-						  bool *_isLogoModeEnabled, bool *_isMoveLogoModeEnabled, \
 						  int *_logoX, int *_logoY)
 	{
-		if (*_isLogoModeEnabled)
+		if (_currentMode->applyLogo)
 		{
-			_currentMode->applyLogo = true;
-			if (*_isMoveLogoModeEnabled)
+			if (_currentMode->moveLogo)
 			{
-				_currentMode->moveLogo = true;
 				if (CHECK_MSB(_userKeys[VK_LEFT]) || _moveDirection->left)
 				{
 					*_logoX -= 1;
@@ -409,14 +403,9 @@ namespace keyboard
 					_readKeys[VK_DOWN] = 0x0;
 				}
 			}
-			if (!(*_isMoveLogoModeEnabled))
-			{
-				_currentMode->moveLogo = false;
-			}
 		}
-		else // if (!isLogoModeEnabled)
+		else
 		{
-			_currentMode->applyLogo = false;
 			_currentMode->moveLogo = false;
 		}
 		return;
