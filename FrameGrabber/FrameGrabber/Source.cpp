@@ -49,6 +49,7 @@ int buttonHeight = 30;
 string imagesSavingPath;
 string framesFolderPath;
 string framesSavingPath;
+bool isVideoPathInputModeEnabled, isFramesPathInputModeEnabled, isImagePathInputModeEnabled, isLogoPathInputModeEnabled;
 
 /* Image saving */
 vector<int> compression_params;
@@ -169,10 +170,10 @@ int main(int argc, char* argv[])
 	openCamera();
 
 	/* Initialize cvUI menu window */
-	int menuWidth = 200;
+	int menuWidth = 220;
 	cvui::init(CVUI_WINDOW_NAME);
 	int cvUIWindowWidth = margin + padding + menuWidth + 3 * padding + capWidth + 3 * padding + capWidth + padding + margin;
-	int cvUIWindowHeight = 700;
+	int cvUIWindowHeight = 750;
 	cv::Mat gui = cv::Mat(cv::Size(cvUIWindowWidth, cvUIWindowHeight), CV_8UC3);
 	gui = cv::Scalar(55, 55, 55);
 
@@ -258,9 +259,9 @@ int main(int argc, char* argv[])
 			int menuPanelX = margin;
 			int menuPanelY = margin;
 			int menuPanelWidth = padding + menuWidth + padding;
-			int menuPanelHeight = cvUIWindowHeight - 2 * margin;
+			int menuPanelHeight = margin + capHeight + 12 * padding;
 			cvui::rect(gui, menuPanelX, menuPanelY, menuPanelWidth, menuPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding);
+			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight - padding, padding);
 			cvui::text("Menu");
 			if (!isImageModeEnabled)
 			{
@@ -269,40 +270,11 @@ int main(int argc, char* argv[])
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
 
 			}
-				isPathInputModeEnabled = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
-			if (isPathInputModeEnabled)
-			{
-				//if (userChar != 0)
-				//{
-				//	userPath += userChar;
-				//	userChar = 0;
-				//}
-				// TODO: Zapanowac nad menu +1
-				int status;
-				if (isImageModeEnabled)
-				{
-					status = cvui::iarea(menuPanelX + padding, margin + 4 * padding, menuWidth, padding);
-					cvui::rect(gui, menuPanelX + padding, margin + 4 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
-				}
-				else
-				{
-					status = cvui::iarea(menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding);
-					cvui::rect(gui, menuPanelX + padding, margin + 10.5 * padding, menuWidth, padding, 0x4d4d4d, 0x373737);
-				}
-				const char *userPathC = userPath.c_str();
-				cvui::text(userPathC);
-				switch (status) {
-				case cvui::CLICK:  std::cout << "Clicked!" << std::endl; break;
-				case cvui::DOWN:   cvui::text("Mouse is: DOWN"); break;
-				case cvui::OVER:   cvui::text("Mouse is: OVER"); break;
-				case cvui::OUT:    cvui::text("Mouse is: OUT"); break;
-				}
-			}
 			isLogoModeEnabled = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			isImageModeEnabled = cvui::checkbox("Show image", &currentMode.loadImage);
 			if (isImageModeEnabled)
 			{
-				saveToFile = cvui::button(buttonWidth, buttonHeight, "Save to file");
+				saveToFile = cvui::button(buttonWidth * 1.5, buttonHeight, "Save to file");
 			}
 			isFrameGrabbingModeEnabled = cvui::checkbox("Save video to files", &currentMode.frameGrabbing);
 			cvui::endColumn();
@@ -310,9 +282,9 @@ int main(int argc, char* argv[])
 			int firstPanelX = margin + padding + menuWidth + 2 * padding;
 			int firstPanelY = margin;
 			int firstPanelWidth = padding + capWidth + padding;
-			int firstPanelHeight = margin + capHeight + 15 * padding;
+			int firstPanelHeight = margin + capHeight + 12 * padding;
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight, padding);
+			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight - padding, padding);
 			cvui::image(frame);
 			if (!isImageModeEnabled)
 			{
@@ -326,9 +298,9 @@ int main(int argc, char* argv[])
 			int secondPanelX = margin + padding + menuWidth + 3 * padding + capWidth + 2 * padding;
 			int secondPanelY = margin;
 			int secondPanelWidth = padding + capWidth + padding;
-			int secondPanelHeight = padding + capHeight + 15 * padding;
+			int secondPanelHeight = padding + capHeight + 12 * padding;
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight, padding);
+			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight - padding, padding);
 			if (isLogoModeEnabled) {
 				cvui::image(frameWithLogo);
 				isMoveLogoModeEnabled = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
@@ -351,7 +323,94 @@ int main(int argc, char* argv[])
 				}
 			}
 			cvui::endColumn();
+			
+			int pathPanelX = menuPanelX;
+			int pathPanelY = menuPanelY + menuPanelHeight + padding;
+			int pathPanelWidth = cvUIWindowWidth - 2 * margin;
+			int pathPanelHeight = cvUIWindowHeight - margin - menuPanelHeight - padding - margin;
+			cvui::rect(gui, pathPanelX, pathPanelY, pathPanelWidth, pathPanelHeight, 0x454545, 0x454545);
+			cvui::beginColumn(gui, pathPanelX + padding, pathPanelY + padding, pathPanelWidth - 2 * padding, pathPanelHeight - padding, padding / 2);
+			isPathInputModeEnabled = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
+			if(isPathInputModeEnabled)
+			{
+				int pathAreaHeight = padding;
+				int offsetX = 6, offsetY = 4;
+				// if path to video mode
+				int pathToVideoAreaX = pathPanelX + 7 * padding;
+				int pathToVideoAreaY = pathPanelY + 2 * padding;
+				int pathToVideoAreaWidth = pathPanelWidth - 8 * padding;
+				isVideoPathInputModeEnabled = cvui::checkbox("Path to video: ", &isVideoPathInputModeEnabled);
+				if (isVideoPathInputModeEnabled) {
+					cout << "TEST" << endl;
+					cvui::iarea(pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight);
+					cvui::rect(gui, pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+					const char *userPathC = userPath.c_str();
+					cvui::printf(gui, pathToVideoAreaX + offsetX, pathToVideoAreaY + offsetY, userPathC);
+				}
+				else {
+					cout << "TEST FAIL" << endl;
+				}
+				// if path to frames
+				int pathToFramesAreaX = pathPanelX + 9.5 * padding;
+				int pathToFramesAreaY = pathPanelY + 3.3 * padding;
+				int pathToFramesAreaWidth = pathPanelWidth - 10.5 * padding;
+				isFramesPathInputModeEnabled = cvui::checkbox("Path to frames folder: ", &isFramesPathInputModeEnabled);
+				if (isFramesPathInputModeEnabled) 
+				{
+					cvui::iarea(pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight);
+					cvui::rect(gui, pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+					const char *userPathC = userPath.c_str();
+					cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPathC);
+				}
+				// if path to image
+				int pathToImageAreaX = pathPanelX + 7 * padding;
+				int pathToImageAreaY = pathPanelY + 4.6 * padding;
+				int pathToImageAreaWidth = pathPanelWidth - 8 * padding;
+				isImagePathInputModeEnabled = cvui::checkbox("Path to image: ", &isImagePathInputModeEnabled);
+				if (isImagePathInputModeEnabled) 
+				{
+					cvui::iarea(pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight);
+					cvui::rect(gui, pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+					const char *userPathC = userPath.c_str();
+					cvui::printf(gui, pathToImageAreaX + offsetX, pathToImageAreaY + offsetY, userPathC);
+				}
+				// if path to logo
+				int pathToLogoAreaX = pathPanelX + 6.5 * padding;
+				int pathToLogoAreaY = pathPanelY + 5.9 * padding;
+				int pathToLogoAreaWidth = pathPanelWidth - 7.5 * padding;
+				isLogoPathInputModeEnabled = cvui::checkbox("Path to logo: ", &isLogoPathInputModeEnabled);
+				if (isLogoPathInputModeEnabled)
+				{
+					cvui::iarea(pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight);
+					cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+					const char *userPathC = userPath.c_str();
+					cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathC);
+				}
+			}
 
+			/*
+			if (isPathInputModeEnabled)
+			{
+				//if (userChar != 0)
+				//{
+				//	userPath += userChar;
+				//	userChar = 0;
+				//}
+				// TODO: Zapanowac nad menu +1
+				if (isImageModeEnabled)
+				{
+					}
+				else
+				{
+					cvui::iarea(pathPanelX + padding, pathPanelY + 2 * padding, pathPanelWidth - 2 * padding, padding);
+					cvui::rect(gui, pathPanelX + padding, pathPanelY + 2 * padding, pathPanelWidth - 2 * padding, padding, 0x4d4d4d, 0x373737);
+				}
+				const char *userPathC = userPath.c_str();
+				cvui::text(userPathC);
+			}
+			*/
+			cvui::endColumn();
+			
 			cvui::imshow(CVUI_WINDOW_NAME, gui);
 
 			modeUpdate(requestedFPS);
