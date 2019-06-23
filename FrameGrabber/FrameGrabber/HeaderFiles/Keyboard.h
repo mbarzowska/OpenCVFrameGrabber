@@ -284,7 +284,8 @@ namespace keyboard
 				_userKeys[VK_S] = 0x0;
 				_readKeys[VK_S] = 0x0;
 			}
-			if (_currentMode->recording && CHECK_MSB(_userKeys[VK_E]))
+			if ((_currentMode->recording && CHECK_MSB(_userKeys[VK_E])) ||
+				!_currentMode->recording)
 			{
 				_currentMode->recording = false;
 				_modeString = "Stopped";

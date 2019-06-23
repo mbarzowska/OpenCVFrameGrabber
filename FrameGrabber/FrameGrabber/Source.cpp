@@ -21,7 +21,7 @@ using namespace std;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
 /* */ bool isLogoMovingMessedUp, isImageLoaded;
-bool saveToFile;
+bool saveFrameToFile;
 
 /* Matrices	*/
 /* basic	*/ cv::Mat frame;
@@ -32,7 +32,7 @@ string videoSavingPath;
 char userChar = 0;
 double capWidth = 0.0;
 double capHeight = 0.0;
-string logoPath = R"(C:\Users\Jan Iwaszkiewicz\Pictures\LBJ\avatar.png)"; // TODO
+string logoPath = R"(C:\Users\barzo\Desktop\logo-cv.png)"; // TODO
 int logoX = 0;
 int logoY = 0;
 cv::Mat frameWithLogo;
@@ -269,10 +269,8 @@ int main(int argc, char* argv[])
 			}
 			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
-			if (currentMode.loadImage)
-			{
-				saveToFile = cvui::button(buttonWidth * 1.5, buttonHeight, "Save to file");
-			}
+			// Get for every mode
+				saveFrameToFile = cvui::button(buttonWidth * 1.5, buttonHeight, "Save to file");
 			currentMode.frameGrabbing = cvui::checkbox("Save video to files", &currentMode.frameGrabbing);
 			cvui::endColumn();
 
@@ -286,8 +284,8 @@ int main(int argc, char* argv[])
 			if (!currentMode.loadImage)
 			{
 				cvui::text("Frame track bar:");
-        // Need to convert in that way, maybe put in the player to do it under the hood
-			  cvui::trackbar(capWidth, &player::frameNum, player::frameMin, player::frameMax + (player::frameMax == 0 ? 1 : 0));
+				// Need to convert in that way, maybe put in the player to do it under the hood
+				cvui::trackbar(capWidth, &player::frameNum, player::frameMin, player::frameMax + (player::frameMax == 0 ? 1 : 0));
 			}
 			cvui::endColumn();
 
@@ -423,15 +421,15 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (saveToFile)
+			if (saveFrameToFile)
 			{
 				if (currentMode.applyLogo)
 				{
-					cv::imwrite(videoSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params);
+					cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params);
 				}
 				else
 				{
-					cv::imwrite(videoSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params);
+					cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params);
 				}
 			}
 			// Some video is opened right now
