@@ -83,6 +83,27 @@ inline void openCamera()
 
 void modeUpdate(int requestedFPS)
 {
+	// Get info about mode
+	if (currentMode.modeVideo)
+	{
+		modeString = "VIDEO | ";
+		if (currentMode.playVideo)
+			modeString += "Playing video. ";
+		else
+			modeString += "Stopped video. ";
+		if (currentMode.recording)
+			modeString += "Recording from video. ";
+	}
+	if (!currentMode.modeVideo)
+	{
+		modeString = "CAMERA | ";
+		if (currentMode.recording)
+			modeString += "Recording from camera. ";
+	}
+	if (currentMode.loadImage)
+		modeString = "IMAGE | ";
+	if (currentMode.pathInput)
+		modeString = "PATH INPUT | ";
 	// Get current keyboard input
 	keyboard::initKeyboard(keyboard::userKeys);
 	// Copy previous iteration keys
@@ -109,7 +130,6 @@ void modeUpdate(int requestedFPS)
 			const auto codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
 			const auto size = cv::Size(320, 240);
 			outputVideo.open(outputPath, codec, requestedFPS, size);
-			modeString = "New file opened";
 		}
 		// Keyboard handler for recording state
 		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
@@ -123,15 +143,13 @@ void modeUpdate(int requestedFPS)
 		// FrameGrabbing keyboard handler
 		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
 		{
-			//TODO in GUI
 			currentMode.frameGrabbing = false;
-			cout << "video not playing, cant save frames" << endl;
+			modeString += "Video is not playing, can't save frames. ";
 		}
 		if (currentMode.frameGrabbing && !currentMode.modeVideo ||
 			currentMode.frameGrabbing && currentMode.modeVideo && currentMode.playVideo)
 		{
-			//TODO in GUI
-			cout << "can save frames" << endl;
+			modeString += "Saving frames. ";
 		}
 		// Logo keyboard handler
 		keyboard::logoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
@@ -341,7 +359,7 @@ int main(int argc, char* argv[])
 			int pathPanelX = menuPanelX;
 			int pathPanelY = menuPanelY + menuPanelHeight + padding;
 			int pathPanelWidth = cvUIWindowWidth - 2 * margin;
-			int pathPanelHeight = cvUIWindowHeight - margin - menuPanelHeight - padding - margin;
+			int pathPanelHeight = cvUIWindowHeight - margin - menuPanelHeight - padding - 2 * padding - margin;
 			cvui::rect(gui, pathPanelX, pathPanelY, pathPanelWidth, pathPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, pathPanelX + padding, pathPanelY + padding, pathPanelWidth - 2 * padding, pathPanelHeight - padding, padding / 2);
 			currentMode.pathInput = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
@@ -397,6 +415,18 @@ int main(int argc, char* argv[])
 				cvui::text(userPathC);
 			}
 			*/
+			cvui::endColumn();
+
+			/* Error message section */
+			int alertPanelX = menuPanelX;
+			int alertPanelY = cvUIWindowHeight - padding - margin;
+			int alertPanelWidth = cvUIWindowWidth - 2 * margin;
+			int alertPanelHeight = 1.5 * padding;
+			cvui::rect(gui, alertPanelX, alertPanelY, alertPanelWidth, alertPanelHeight, 0xDC4343, 0x696969); // 0xDC4343
+			cvui::beginColumn(gui, alertPanelX + padding, alertPanelY + padding / 2, alertPanelWidth - 2 * padding, alertPanelHeight - padding, padding / 2);
+			
+			cvui::text(modeString);
+
 			cvui::endColumn();
 
 			cvui::imshow(CVUI_WINDOW_NAME, gui);
