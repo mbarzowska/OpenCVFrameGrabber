@@ -261,18 +261,19 @@ int main(int argc, char* argv[])
 			cvui::text("Current command:");
 			cvui::text(keyboard::currentCommand);
 			cvui::text("Menu");
+			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
+			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			if (!currentMode.loadImage)
 			{
 				currentMode.recording = cvui::checkbox("Record straight to video file", &currentMode.recording);
 				cvui::text("    Set FPS:");
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
-			}
-			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
-			currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
-			// Get for every mode
-			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
-			if (!currentMode.loadImage) {
 				currentMode.frameGrabbing = cvui::checkbox("Save video to frames", &currentMode.frameGrabbing);
+			}
+			cvui::space(padding);
+			if (!userPathImage.empty())
+			{
+				currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
 			}
 			cvui::endColumn();
 
@@ -283,7 +284,7 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, firstPanelX, firstPanelY, firstPanelWidth, firstPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, firstPanelX + padding, firstPanelY + padding, capWidth, firstPanelHeight - padding, padding);
 			cvui::image(frame);
-			if (!currentMode.loadImage)
+			if (currentMode.modeVideo)
 			{
 				cvui::text("Frame track bar:");
 				// Need to convert in that way, maybe put in the player to do it under the hood
