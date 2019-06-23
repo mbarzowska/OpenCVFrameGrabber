@@ -269,7 +269,8 @@ int main(int argc, char* argv[])
 				currentMode.recording = cvui::checkbox("Record straight to video file", &currentMode.recording);
 				cvui::text("    Set FPS:");
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
-				currentMode.frameGrabbing = cvui::checkbox("Save video to frames", &currentMode.frameGrabbing);
+				cvui::text("Save video to frames:");
+				currentMode.frameGrabbing = cvui::checkbox("On demand (must be running)", &currentMode.frameGrabbing);
 			}
 			cvui::space(padding);
 			if (!userPathImage.empty())
