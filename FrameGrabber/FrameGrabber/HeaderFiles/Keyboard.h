@@ -18,6 +18,10 @@ Keyboard input helpers.
 #define VK_Q 0x51
 #define VK_V 0x56
 #define VK_ALT VK_MENU
+#define VK_ONE 0x31
+#define VK_TWO 0x32
+#define VK_THREE 0x33
+#define VK_FOUR 0x34
 
 #define CHECK_MSB(x) ((x & 0x80) == 0x80)
 
@@ -124,7 +128,7 @@ namespace keyboard
 
 	void clearCommands(BYTE *_readKeys, BYTE *_userKeys)
 	{
-		if (CHECK_MSB(_userKeys[VK_Q]))
+		if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_Q]))
 		{
 			_readKeys[VK_E] = 0x0;
 			_readKeys[VK_S] = 0x0;
@@ -212,6 +216,57 @@ namespace keyboard
 				_userKeys[VK_DELETE] = 0x0;
 				_readKeys[VK_DELETE] = 0x0;
 			}
+			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_ONE]))
+			{
+				_currentMode->pathVideoInput = !(_currentMode->pathVideoInput);
+				_userKeys[VK_ONE] = 0x0;
+				_userKeys[VK_CONTROL] = 0x0;
+				_readKeys[VK_ONE] = 0x0;
+				_readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_TWO]))
+			{
+				_currentMode->pathFramesInput = !(_currentMode->pathFramesInput);
+				_userKeys[VK_TWO] = 0x0;
+				_userKeys[VK_CONTROL] = 0x0;
+				_readKeys[VK_TWO] = 0x0;
+				_readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_THREE]))
+			{
+				_currentMode->pathImageInput = !(_currentMode->pathImageInput);
+				_userKeys[VK_THREE] = 0x0;
+				_userKeys[VK_CONTROL] = 0x0;
+				_readKeys[VK_THREE] = 0x0;
+				_readKeys[VK_CONTROL] = 0x0;
+			}
+			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_FOUR]))
+			{
+				_currentMode->pathLogoInput = !(_currentMode->pathLogoInput);
+				_userKeys[VK_FOUR] = 0x0;
+				_userKeys[VK_CONTROL] = 0x0;
+				_readKeys[VK_FOUR] = 0x0;
+				_readKeys[VK_CONTROL] = 0x0;
+			}
+			// Backspace (remove last char from path)
+			if (CHECK_MSB(_userKeys[VK_BACK]))
+			{
+				if (_currentMode->pathVideoInput)
+					_userPathVideo = _userPathVideo.substr(0, _userPathVideo.size() - 1);
+				if (_currentMode->pathFramesInput)
+					_userPathFrames = _userPathFrames.substr(0, _userPathFrames.size() - 1);
+				if (_currentMode->pathImageInput)
+					_userPathImage = _userPathImage.substr(0, _userPathImage.size() - 1);
+				if (_currentMode->pathLogoInput)
+					_userPathLogo = _userPathLogo.substr(0, _userPathLogo.size() - 1);
+				_userKeys[VK_BACK] = 0x0;
+				_readKeys[VK_BACK] = 0x0;
+			}
+			//if (CHECK_MSB(_userKeys[VK_SHIFT]))
+			//{
+			//	_userKeys[VK_SHIFT] = 0x0;
+			//	_readKeys[VK_SHIFT] = 0x0;
+			//}
 		}
 		return;
 	}
@@ -287,7 +342,7 @@ namespace keyboard
 			_userKeys[VK_V] = 0x0;
 			_readKeys[VK_V] = 0x0;
 		}
-		if (_currentMode->modeVideo)
+		if (_currentMode->modeVideo && !(_currentMode->moveLogo))
 		{
 			// Restore the signal after loop
 			if (_currentMode->playVideo)
