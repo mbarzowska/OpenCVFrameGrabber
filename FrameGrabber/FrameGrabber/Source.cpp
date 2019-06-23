@@ -19,7 +19,7 @@ using namespace std;
 
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
-/* */ string secondPanelAlertString = "", secondPanelAdditionString = "";
+/* */ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
 /* */ bool isLogoMovingMessedUp, isImageLoaded;
 bool saveFrameToFile;
 
@@ -214,7 +214,8 @@ int main(int argc, char* argv[])
 
 			if (currentMode.applyLogo)
 			{
-				try {
+				try 
+				{
 					if (restore)
 					{
 						logoX = 0;
@@ -246,8 +247,8 @@ int main(int argc, char* argv[])
 				catch (cv::Exception &e)
 				{
 					isLogoMovingMessedUp = true;
-					secondPanelAlertString = "Can't move logo any further!";
-					secondPanelAdditionString = "Restore previous position to continue.";
+					secondPanelLogoAlertString = "Can't move logo any further!";
+					secondPanelLogoAdditionString = "Restore previous position to continue.";
 				}
 			}
 
@@ -299,13 +300,16 @@ int main(int argc, char* argv[])
 			int secondPanelHeight = padding + capHeight + 12 * padding;
 			cvui::rect(gui, secondPanelX, secondPanelY, secondPanelWidth, secondPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, secondPanelX + padding, secondPanelY + padding, capWidth, secondPanelHeight - padding, padding);
-			if (currentMode.applyLogo) {
+			if (currentMode.applyLogo) 
+			{
 				cvui::image(frameWithLogo);
 				currentMode.moveLogo = cvui::checkbox("Enable logo move", &currentMode.moveLogo);
-				if (currentMode.moveLogo) {
-					if (isLogoMovingMessedUp) {
-						cvui::text(secondPanelAlertString);
-						cvui::text(secondPanelAdditionString);
+				if (currentMode.moveLogo)
+				{
+					if (isLogoMovingMessedUp) 
+					{
+						cvui::text(secondPanelLogoAlertString);
+						cvui::text(secondPanelLogoAdditionString);
 					}
 					cvui::beginRow();
 					moveDirection.left = cvui::button(buttonWidth, buttonHeight, "LEFT");
@@ -389,11 +393,18 @@ int main(int argc, char* argv[])
 
 			if (saveFrameToFile)
 			{
-				if (currentMode.applyLogo) { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params); }
-				else { cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params); }
+				if (currentMode.applyLogo)
+				{
+					cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frameWithLogo, compression_params);
+				}
+				else
+				{
+					cv::imwrite(imagesSavingPath + strhelp::generateRandomString(20) + ".jpg", frame, compression_params);
+				}
 			}
 
-			if (!currentMode.frameGrabbing) {
+			if (!currentMode.frameGrabbing) 
+			{
 				frameGrabbingSessionId = strhelp::generateRandomString(5);
 				createFrameGrabbingFolderPath = true;
 			}
@@ -406,21 +417,33 @@ int main(int argc, char* argv[])
 				// TODO		wykorzystanie nagrywania przedzialu klatkowego + pokazanie tego w 2 oknie
 				// TODO		przedzial czasowy nagrywania (czas * FPS = klatki)
 
-				if (currentMode.recording && currentMode.playVideo && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) {
-					if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
+				if (currentMode.recording && currentMode.playVideo && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) 
+				{
+					if (currentMode.applyLogo)
+					{
+						outputVideo.write(frameWithLogo);
+					}
 					else { outputVideo.write(frame); }
 				}
 
 				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-				if (currentMode.frameGrabbing && currentMode.playVideo) {
-					if (createFrameGrabbingFolderPath) {
+				if (currentMode.frameGrabbing && currentMode.playVideo) 
+				{
+					if (createFrameGrabbingFolderPath) 
+					{
 						framesSavingPath = framesFolderPath + frameGrabbingSessionId;
 						CreateDirectory(framesSavingPath.c_str(), NULL);
 						createFrameGrabbingFolderPath = false;
 					}
 
-					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+					if (currentMode.applyLogo)
+					{
+						cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+					}
+					else
+					{
+						cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+					}
 				}
 
 				player::playerAction(&player::frameNum, player::playerSignal);
@@ -428,21 +451,36 @@ int main(int argc, char* argv[])
 
 			if (!currentMode.modeVideo && !currentMode.loadImage)
 			{
-				if (currentMode.recording) {
-					if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
-					else { outputVideo.write(frame); }
+				if (currentMode.recording) 
+				{
+					if (currentMode.applyLogo)
+					{
+						outputVideo.write(frameWithLogo);
+					}
+					else
+					{
+						outputVideo.write(frame);
+					}
 				}
 
 				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-				if (currentMode.frameGrabbing) {
-					if (createFrameGrabbingFolderPath) {
+				if (currentMode.frameGrabbing) 
+				{
+					if (createFrameGrabbingFolderPath) 
+					{
 						framesSavingPath = framesFolderPath + frameGrabbingSessionId;
 						CreateDirectory(framesSavingPath.c_str(), NULL);
 						createFrameGrabbingFolderPath = false;
 					}
 
-					if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-					else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+					if (currentMode.applyLogo)
+					{
+						cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+					}
+					else
+					{
+						cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+					}
 				}
 			}
 
