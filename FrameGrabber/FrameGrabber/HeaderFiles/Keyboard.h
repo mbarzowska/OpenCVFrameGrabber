@@ -299,16 +299,16 @@ namespace keyboard
 
 			if (_currentMode->modeVideo) 
 			{
-				if (!(_currentMode->frameGrabbing) && CHECK_MSB(_userKeys[VK_S]))
+				if (!(_currentMode->frameGrabbingOnDemand) && CHECK_MSB(_userKeys[VK_S]))
 				{
-					_currentMode->frameGrabbing = true;
+					_currentMode->frameGrabbingOnDemand = true;
 					_userKeys[VK_S] = 0x0;
 					_readKeys[VK_S] = 0x0;
 				}
 
-				if (_currentMode->frameGrabbing && CHECK_MSB(_userKeys[VK_E]))
+				if (_currentMode->frameGrabbingOnDemand && CHECK_MSB(_userKeys[VK_E]))
 				{
-					_currentMode->frameGrabbing = false;
+					_currentMode->frameGrabbingOnDemand = false;
 					_userKeys[VK_E] = 0x0;
 					_readKeys[VK_E] = 0x0;
 				}

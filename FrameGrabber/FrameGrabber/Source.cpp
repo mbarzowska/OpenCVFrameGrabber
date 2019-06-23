@@ -16,7 +16,6 @@ using namespace std;
 
 /* cvUI	related	*/
 /* on checkbox	*/
-
 /* on trackbar	*/ int requestedFPS = 20;
 /* common		*/ int margin = 20, padding = 20;
 /* */ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
@@ -62,7 +61,7 @@ string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,false};
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -120,14 +119,14 @@ void modeUpdate(int requestedFPS)
 			&player::playerSignal, userPathVideo, modeString, \
 			&outputVideo, &cap, &capWidth, &capHeight);
 		// FrameGrabbing keyboard handler
-		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
+		if (currentMode.frameGrabbingOnDemand && currentMode.modeVideo && !currentMode.playVideo)
 		{
 			//TODO in GUI
-			currentMode.frameGrabbing = false;
+			currentMode.frameGrabbingOnDemand = false;
 			cout << "video not playing, cant save frames" << endl;
 		}
-		if (currentMode.frameGrabbing && !currentMode.modeVideo ||
-			currentMode.frameGrabbing && currentMode.modeVideo && currentMode.playVideo)
+		if (currentMode.frameGrabbingOnDemand && !currentMode.modeVideo ||
+			currentMode.frameGrabbingOnDemand && currentMode.modeVideo && currentMode.playVideo)
 		{
 			//TODO in GUI
 			cout << "can save frames" << endl;
@@ -258,20 +257,32 @@ int main(int argc, char* argv[])
 			int menuPanelWidth = padding + menuWidth + padding;
 			int menuPanelHeight = margin + capHeight + 12 * padding;
 			cvui::rect(gui, menuPanelX, menuPanelY, menuPanelWidth, menuPanelHeight, 0x454545, 0x454545);
-			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding);
+			cvui::beginColumn(gui, menuPanelX + padding, menuPanelY + padding, menuWidth, menuPanelHeight, padding / 2);
 			cvui::text("Current command:");
 			cvui::text(keyboard::currentCommand);
 			cvui::text("Menu");
-			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
 			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			if (!currentMode.loadImage)
 			{
 				currentMode.recording = cvui::checkbox("Record straight to video file", &currentMode.recording);
-				cvui::text("    Set FPS:");
+				cvui::text("Set FPS:");
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
 				cvui::text("Save video to frames:");
-				currentMode.frameGrabbing = cvui::checkbox("On demand (must be running)", &currentMode.frameGrabbing);
+				currentMode.frameGrabbingOnDemand = cvui::checkbox("On demand (must be running)", &currentMode.frameGrabbingOnDemand);
+				if (currentMode.modeVideo) 
+				{
+					// TODO
+					currentMode.frameGrabbingFrameBased = cvui::checkbox("Given frames", &currentMode.frameGrabbingFrameBased);
+					if (currentMode.frameGrabbingFrameBased)
+					{
+					}
+					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
+					if (currentMode.frameGrabbingTimeBased)
+					{
+					}
+				}
 			}
+			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
 			cvui::space(padding);
 			if (!userPathImage.empty())
 			{
@@ -330,7 +341,7 @@ int main(int argc, char* argv[])
 			int pathPanelX = menuPanelX;
 			int pathPanelY = menuPanelY + menuPanelHeight + padding;
 			int pathPanelWidth = cvUIWindowWidth - 2 * margin;
-			int pathPanelHeight = cvUIWindowHeight - margin - menuPanelHeight - padding - margin;
+			int pathPanelHeight = cvUIWindowHeight - margin - menuPanelHeight - padding - 2 * padding - margin;
 			cvui::rect(gui, pathPanelX, pathPanelY, pathPanelWidth, pathPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, pathPanelX + padding, pathPanelY + padding, pathPanelWidth - 2 * padding, pathPanelHeight - padding, padding / 2);
 			currentMode.pathInput = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
@@ -373,7 +384,16 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
 			const char *userPathLogoC = userPathLogo.c_str();
 			cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathLogoC);
-
+			
+			int alertPanelX = menuPanelX;
+			int alertPanelY = cvUIWindowHeight - padding - margin;
+			int alertPanelWidth = cvUIWindowWidth - 2 * margin;
+			int alertPanelHeight = 1.5 * padding;
+			cvui::rect(gui, alertPanelX, alertPanelY, alertPanelWidth, alertPanelHeight, 0xDC4343, 0xDC4343);
+			cvui::beginColumn(gui, alertPanelX + padding, alertPanelY + padding / 2, alertPanelWidth - 2 * padding, alertPanelHeight - padding, padding / 2);
+			cvui::text("HERE");
+			cvui::endColumn();
+			
 			/*
 			if (currentMode.pathInput)
 			{
@@ -404,7 +424,7 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (!currentMode.frameGrabbing) 
+			if (!currentMode.frameGrabbingOnDemand)
 			{
 				frameGrabbingSessionId = strhelp::generateRandomString(5);
 				createFrameGrabbingFolderPath = true;
@@ -424,11 +444,14 @@ int main(int argc, char* argv[])
 					{
 						outputVideo.write(frameWithLogo);
 					}
-					else { outputVideo.write(frame); }
+					else
+					{
+						outputVideo.write(frame);
+					}
 				}
 
 				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-				if (currentMode.frameGrabbing && currentMode.playVideo) 
+				if (currentMode.frameGrabbingOnDemand && currentMode.playVideo)
 				{
 					if (createFrameGrabbingFolderPath) 
 					{
@@ -465,7 +488,7 @@ int main(int argc, char* argv[])
 				}
 
 				// TODO wiadomosc, obostrzenia i porzadek, jesli video nie jest odtwarzane, wyswietl wiadomosc
-				if (currentMode.frameGrabbing) 
+				if (currentMode.frameGrabbingOnDemand)
 				{
 					if (createFrameGrabbingFolderPath) 
 					{
