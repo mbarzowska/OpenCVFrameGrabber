@@ -220,22 +220,23 @@ namespace keyboard
 						       std::string& _modeString, \
 							   cv::VideoWriter *_outputVideo)
 	{
-		if ((CHECK_MSB(_userKeys[VK_S]) && !_currentMode->modeVideo) ||
-			(_currentMode->modeVideo && _currentMode->playVideo))
+		if (!(_currentMode->loadImage))
 		{
-			_currentMode->recording = true;
-			_modeString = "To video file";
-			_userKeys[VK_S] = 0x0;
-			_readKeys[VK_S] = 0x0;
-		}
-		if ((CHECK_MSB(_userKeys[VK_E]) && !_currentMode->modeVideo) ||
-			(!_currentMode->playVideo))
-		{
-			_currentMode->recording = false;
-			_modeString = "Stopped";
-			_outputVideo->release();
-			_userKeys[VK_E] = 0x0;
-			_readKeys[VK_E] = 0x0;
+			if (!(_currentMode->recording) && CHECK_MSB(_userKeys[VK_S]))
+			{
+				_currentMode->recording = true;
+				_modeString = "To video file";
+				_userKeys[VK_S] = 0x0;
+				_readKeys[VK_S] = 0x0;
+			}
+			if (_currentMode->recording && CHECK_MSB(_userKeys[VK_E]))
+			{
+				_currentMode->recording = false;
+				_modeString = "Stopped";
+				_outputVideo->release();
+				_userKeys[VK_E] = 0x0;
+				_readKeys[VK_E] = 0x0;
+			}
 		}
 		return;
 	}

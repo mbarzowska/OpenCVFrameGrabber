@@ -328,58 +328,45 @@ int main(int argc, char* argv[])
 			cvui::rect(gui, pathPanelX, pathPanelY, pathPanelWidth, pathPanelHeight, 0x454545, 0x454545);
 			cvui::beginColumn(gui, pathPanelX + padding, pathPanelY + padding, pathPanelWidth - 2 * padding, pathPanelHeight - padding, padding / 2);
 			currentMode.pathInput = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
-			if(currentMode.pathInput)
-			{
-				int pathAreaHeight = padding;
-				int offsetX = 6, offsetY = 4;
-				// if path to video mode
-				int pathToVideoAreaX = pathPanelX + 7 * padding;
-				int pathToVideoAreaY = pathPanelY + 2 * padding;
-				int pathToVideoAreaWidth = pathPanelWidth - 8 * padding;
-				currentMode.pathVideoInput = cvui::checkbox("Path to video: ", &currentMode.pathVideoInput);
-				if (currentMode.pathVideoInput) {
-					cvui::iarea(pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight);
-					cvui::rect(gui, pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathVideoC = userPathVideo.c_str();
-					cvui::printf(gui, pathToVideoAreaX + offsetX, pathToVideoAreaY + offsetY, userPathVideoC);
-				}
-				// if path to frames
-				int pathToFramesAreaX = pathPanelX + 9.5 * padding;
-				int pathToFramesAreaY = pathPanelY + 3.3 * padding;
-				int pathToFramesAreaWidth = pathPanelWidth - 10.5 * padding;
-				currentMode.pathFramesInput = cvui::checkbox("Path to frames folder: ", &currentMode.pathFramesInput);
-				if (currentMode.pathFramesInput) 
-				{
-					cvui::iarea(pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight);
-					cvui::rect(gui, pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPatFramesC = userPathFrames.c_str();
-					cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPatFramesC);
-				}
-				// if path to image
-				int pathToImageAreaX = pathPanelX + 7 * padding;
-				int pathToImageAreaY = pathPanelY + 4.6 * padding;
-				int pathToImageAreaWidth = pathPanelWidth - 8 * padding;
-				currentMode.pathImageInput = cvui::checkbox("Path to image: ", &currentMode.pathImageInput);
-				if (currentMode.pathImageInput) 
-				{
-					cvui::iarea(pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight);
-					cvui::rect(gui, pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathImageC = userPathImage.c_str();
-					cvui::printf(gui, pathToImageAreaX + offsetX, pathToImageAreaY + offsetY, userPathImageC);
-				}
-				// if path to logo
-				int pathToLogoAreaX = pathPanelX + 6.5 * padding;
-				int pathToLogoAreaY = pathPanelY + 5.9 * padding;
-				int pathToLogoAreaWidth = pathPanelWidth - 7.5 * padding;
-				currentMode.pathLogoInput = cvui::checkbox("Path to logo: ", &currentMode.pathLogoInput);
-				if (currentMode.pathLogoInput)
-				{
-					cvui::iarea(pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight);
-					cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathLogoC = userPathLogo.c_str();
-					cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathLogoC);
-				}
-			}
+			// Start input section
+			int pathAreaHeight = padding;
+			int offsetX = 6, offsetY = 4;
+			// if path to video mode
+			int pathToVideoAreaX = pathPanelX + 7 * padding;
+			int pathToVideoAreaY = pathPanelY + 2 * padding;
+			int pathToVideoAreaWidth = pathPanelWidth - 8 * padding;
+			currentMode.pathVideoInput = cvui::checkbox("Path to video: ", &currentMode.pathVideoInput);
+			cvui::iarea(pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight);
+			cvui::rect(gui, pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+			const char *userPathVideoC = userPathVideo.c_str();
+			cvui::printf(gui, pathToVideoAreaX + offsetX, pathToVideoAreaY + offsetY, userPathVideoC);
+			// if path to frames
+			int pathToFramesAreaX = pathPanelX + 9.5 * padding;
+			int pathToFramesAreaY = pathPanelY + 3.3 * padding;
+			int pathToFramesAreaWidth = pathPanelWidth - 10.5 * padding;
+			currentMode.pathFramesInput = cvui::checkbox("Path to frames folder: ", &currentMode.pathFramesInput);
+			cvui::iarea(pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight);
+			cvui::rect(gui, pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+			const char *userPatFramesC = userPathFrames.c_str();
+			cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPatFramesC);
+			// if path to image
+			int pathToImageAreaX = pathPanelX + 7 * padding;
+			int pathToImageAreaY = pathPanelY + 4.6 * padding;
+			int pathToImageAreaWidth = pathPanelWidth - 8 * padding;
+			currentMode.pathImageInput = cvui::checkbox("Path to image: ", &currentMode.pathImageInput);
+			cvui::iarea(pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight);
+			cvui::rect(gui, pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+			const char *userPathImageC = userPathImage.c_str();
+			cvui::printf(gui, pathToImageAreaX + offsetX, pathToImageAreaY + offsetY, userPathImageC);
+			// if path to logo
+			int pathToLogoAreaX = pathPanelX + 6.5 * padding;
+			int pathToLogoAreaY = pathPanelY + 5.9 * padding;
+			int pathToLogoAreaWidth = pathPanelWidth - 7.5 * padding;
+			currentMode.pathLogoInput = cvui::checkbox("Path to logo: ", &currentMode.pathLogoInput);
+			cvui::iarea(pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight);
+			cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
+			const char *userPathLogoC = userPathLogo.c_str();
+			cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathLogoC);
 
 			/*
 			if (currentMode.pathInput)
@@ -450,6 +437,12 @@ int main(int argc, char* argv[])
 			// Some video is opened right now
 			if (currentMode.modeVideo)
 			{
+				/*if (currentMode.recording)
+				{
+					if (savedoklatekmode)
+					{
+					/// save do klatki
+				}*/
 				if (currentMode.playVideo && currentMode.recording && player::frameNum <= player::frameMax && player::frameNum >= player::frameMin) // TODO: Mode logoMode?
 				{
 					if (currentMode.applyLogo)
