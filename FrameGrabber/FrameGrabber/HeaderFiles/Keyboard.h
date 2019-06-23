@@ -57,7 +57,8 @@ namespace keyboard
 		long long int * frameNum, long long int * frameMax, int * playerSignal, \
 		std::string & _userPath, std::string & _modeString, \
 		cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-		double * capWidth, double * capHeight);
+		double * capWidth, double * capHeight, \
+		cv::Mat *_firstFrame, cv::Mat *_lastFrame);
 
 	void logoModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 		logoMoveDirections *_moveDirection, \
@@ -167,6 +168,11 @@ namespace keyboard
 		if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_P]))
 		{
 			_currentMode->pathInput = !(_currentMode->pathInput);
+			// Clear all checkboxes
+			_currentMode->pathVideoInput = false;
+			_currentMode->pathFramesInput = false;
+			_currentMode->pathImageInput = false;
+			_currentMode->pathLogoInput = false;
 			_userKeys[VK_CONTROL] = 0x0;
 			_userKeys[VK_P] = 0x0;
 			_readKeys[VK_CONTROL] = 0x0;
@@ -282,7 +288,7 @@ namespace keyboard
 				if (!(_currentMode->recording) && CHECK_MSB(_userKeys[VK_S]))
 				{
 					_currentMode->recording = true;
-					_modeString = "To video file";
+					_modeString += "Recording from camera. ";
 					_userKeys[VK_S] = 0x0;
 					_readKeys[VK_S] = 0x0;
 				}
@@ -290,7 +296,7 @@ namespace keyboard
 					!_currentMode->recording)
 				{
 					_currentMode->recording = false;
-					_modeString = "Stopped";
+					// _modeString += "Stopped recording from camera. ";
 					_outputVideo->release();
 					_userKeys[VK_E] = 0x0;
 					_readKeys[VK_E] = 0x0;
@@ -302,6 +308,7 @@ namespace keyboard
 				if (!(_currentMode->frameGrabbingOnDemand) && CHECK_MSB(_userKeys[VK_S]))
 				{
 					_currentMode->frameGrabbingOnDemand = true;
+					_modeString += "Recording from video. ";
 					_userKeys[VK_S] = 0x0;
 					_readKeys[VK_S] = 0x0;
 				}
@@ -309,6 +316,7 @@ namespace keyboard
 				if (_currentMode->frameGrabbingOnDemand && CHECK_MSB(_userKeys[VK_E]))
 				{
 					_currentMode->frameGrabbingOnDemand = false;
+					// modeString += "Stopped recording from video. ";
 					_userKeys[VK_E] = 0x0;
 					_readKeys[VK_E] = 0x0;
 				}
@@ -321,14 +329,19 @@ namespace keyboard
 		long long int *frameNum, long long int *frameMax, int *playerSignal, \
 		std::string& _userPathVideo, std::string& _modeString, \
 		cv::VideoWriter *_outputVideo, cv::VideoCapture *_cap, \
-		double *capWidth, double *capHeight)
+		double *capWidth, double *capHeight, \
+		cv::Mat *_firstFrame, cv::Mat *_lastFrame)
 	{
 		if (CHECK_MSB(_userKeys[VK_V]))
 		{
 			_currentMode->recording = false;
 			_currentMode->modeVideo = !_currentMode->modeVideo;
 			_currentMode->playVideo = false;
-			if (_currentMode->modeVideo && _userPathVideo != "")
+			if (_userPathVideo == "")
+			{
+				_modeString += "Set valid path to video file! ";
+			}
+			else if (_currentMode->modeVideo)
 			{
 				// cap.release();
 				try
@@ -336,29 +349,50 @@ namespace keyboard
 					_outputVideo->release();
 					_cap->open(_userPathVideo);
 					// Set max and starting frames
-					*frameNum = 0;
-					*frameMax = static_cast<long long int>(_cap->get(cv::CAP_PROP_FRAME_COUNT)) - 1; // -1 !!!!
-					_modeString = "Stopped recording if there was any, open video mode.";
+					if (_cap->isOpened())
+					{
+						*frameNum = 0;
+						*frameMax = static_cast<long long int>(_cap->get(cv::CAP_PROP_FRAME_COUNT)) - 1; // -1 !!!!
+						// Get first and last frame
+						_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
+						_cap->read(*_firstFrame);
+						_cap->set(cv::CAP_PROP_POS_FRAMES, *frameMax);
+						_cap->read(*_lastFrame);
+						_cap->set(cv::CAP_PROP_POS_FRAMES, *frameNum);
+						// _modeString = "Video mode | ";
+					}
+					else
+					{
+						_modeString += "Can't open video file! ";
+					}
 				}
 				catch (cv::Exception &e)
 				{
-					_modeString = "Set valid path to video file.";
+					_modeString += "Set valid path to video file! ";
 				}
 			}
 			else
 			{
+				// Reset trackbar values
+				*frameNum = 0;
+				*frameMax = 1;
 				// cap.release();
 				/* Open a camera for video capturing */
-				_cap->open(0);
-
-				/* Set properties */
-				*capWidth = _cap->get(cv::CAP_PROP_FRAME_WIDTH);
-				*capHeight = _cap->get(cv::CAP_PROP_FRAME_HEIGHT);
-				_cap->set(cv::CAP_PROP_FRAME_WIDTH, *capWidth / 2);
-				_cap->set(cv::CAP_PROP_FRAME_HEIGHT, *capHeight / 2);
-				*capWidth = *capWidth / 2;
-				*capHeight = *capHeight / 2;
-				_modeString = "Stopped video mode, started recording mode.";
+				try
+				{
+					_cap->open(0);
+					/* Set properties */
+					*capWidth = _cap->get(cv::CAP_PROP_FRAME_WIDTH);
+					*capHeight = _cap->get(cv::CAP_PROP_FRAME_HEIGHT);
+					_cap->set(cv::CAP_PROP_FRAME_WIDTH, *capWidth / 2);
+					_cap->set(cv::CAP_PROP_FRAME_HEIGHT, *capHeight / 2);
+					*capWidth = *capWidth / 2;
+					*capHeight = *capHeight / 2;
+				}
+				catch (cv::Exception &e)
+				{
+					_modeString += "Can't open the camera! ";
+				}
 			}
 			_userKeys[VK_V] = 0x0;
 			_readKeys[VK_V] = 0x0;
@@ -375,10 +409,13 @@ namespace keyboard
 			{
 				_currentMode->playVideo = !_currentMode->playVideo;
 				if (_currentMode->playVideo)
+				{
 					*playerSignal = PLAYER_STANDARD;
+				}
 				else
+				{
 					*playerSignal = PLAYER_NONE;
-				_modeString = "Running/Stopped video";
+				}
 				_userKeys[VK_SPACE] = 0x0;
 				_readKeys[VK_SPACE] = 0x0;
 			}
@@ -386,6 +423,8 @@ namespace keyboard
 			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_SHIFT]) && CHECK_MSB(_userKeys[VK_LEFT]))
 			{
 				*playerSignal = PLAYER_SCENE_L;
+				_currentMode->previousSceneRequest = !(_currentMode->previousSceneRequest);
+				_currentMode->nextSceneRequest = false;
 				_userKeys[VK_LEFT] = 0x0;
 				_userKeys[VK_SHIFT] = 0x0;
 				_userKeys[VK_CONTROL] = 0x0;
@@ -396,6 +435,8 @@ namespace keyboard
 			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_SHIFT]) && CHECK_MSB(_userKeys[VK_RIGHT]))
 			{
 				*playerSignal = PLAYER_SCENE_R;
+				_currentMode->nextSceneRequest = !(_currentMode->nextSceneRequest);
+				_currentMode->previousSceneRequest = false;
 				_userKeys[VK_RIGHT] = 0x0;
 				_userKeys[VK_SHIFT] = 0x0;
 				_userKeys[VK_CONTROL] = 0x0;
