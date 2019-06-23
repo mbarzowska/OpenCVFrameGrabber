@@ -29,7 +29,6 @@ bool saveToFile;
 /* Helpers and other variables */
 cv::VideoCapture cap;
 string videoSavingPath;
-string userPath = ""; // path to file defined by user
 char userChar = 0;
 double capWidth = 0.0;
 double capHeight = 0.0;
@@ -47,6 +46,12 @@ string imagesSavingPath;
 string framesFolderPath;
 string framesSavingPath;
 
+/* User paths */
+string userPathVideo = ""; // path to file defined by user
+string userPathFrames = "";
+string userPathImage = "";
+string userPathLogo = "";
+
 /* Image saving */
 vector<int> compression_params;
 string frameGrabbingSessionId;
@@ -57,7 +62,7 @@ string videoName;
 cv::VideoWriter outputVideo;
 string modeString;
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -90,11 +95,12 @@ void modeUpdate(int requestedFPS)
 	// Standard flow
 	if (currentMode.pathInput)
 	{
-		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, userPath);
+		keyboard::pathModeKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, \
+								   userPathVideo, userPathFrames, userPathImage, userPathLogo);
 	}
 	else
 	{
-		if ((!outputVideo.isOpened() && currentMode.recording && !currentMode.stop && !currentMode.modeVideo) ||
+		if ((!outputVideo.isOpened() && currentMode.recording && !currentMode.modeVideo) ||
 			(!outputVideo.isOpened() && currentMode.recording && currentMode.modeVideo && currentMode.playVideo))
 		{
 			videoName = strhelp::createVideoName();
@@ -111,7 +117,7 @@ void modeUpdate(int requestedFPS)
 		// Keyboard handler for video state
 		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
 									&currentMode, &player::frameNum, &player::frameMax, \
-									&player::playerSignal, userPath, modeString, \
+									&player::playerSignal, userPathVideo, modeString, \
 									&outputVideo, &cap, &capWidth, &capHeight);
 		// FrameGrabbing keyboard handler
 		if (currentMode.frameGrabbing && currentMode.modeVideo && !currentMode.playVideo)
@@ -188,13 +194,13 @@ int main(int argc, char* argv[])
 			{
 				if (!isImageLoaded)
 				{
-					image = cv::imread(userPath);
+					image = cv::imread(userPathImage);
 					int tmpRatio = image.rows / image.cols;
-
 					if (image.rows > frame.rows && image.cols > frame.cols)
 					{
 						cv::resize(image, image, cv::Size(image.cols / tmpRatio,frame.rows));
 					}
+					isImageLoaded = true;
 				}
 				frame = image;
 			}
@@ -260,7 +266,6 @@ int main(int argc, char* argv[])
 				currentMode.recording = cvui::checkbox("Record straight to video file", &currentMode.recording);
 				cvui::text("    Set FPS:");
 				cvui::trackbar(menuWidth, &requestedFPS, 10, 100);
-
 			}
 			currentMode.applyLogo = cvui::checkbox("Put logo on", &currentMode.applyLogo);
 			currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
@@ -333,14 +338,10 @@ int main(int argc, char* argv[])
 				int pathToVideoAreaWidth = pathPanelWidth - 8 * padding;
 				currentMode.pathVideoInput = cvui::checkbox("Path to video: ", &currentMode.pathVideoInput);
 				if (currentMode.pathVideoInput) {
-					cout << "TEST" << endl;
 					cvui::iarea(pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToVideoAreaX, pathToVideoAreaY, pathToVideoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathC = userPath.c_str();
-					cvui::printf(gui, pathToVideoAreaX + offsetX, pathToVideoAreaY + offsetY, userPathC);
-				}
-				else {
-					cout << "TEST FAIL" << endl;
+					const char *userPathVideoC = userPathVideo.c_str();
+					cvui::printf(gui, pathToVideoAreaX + offsetX, pathToVideoAreaY + offsetY, userPathVideoC);
 				}
 				// if path to frames
 				int pathToFramesAreaX = pathPanelX + 9.5 * padding;
@@ -351,8 +352,8 @@ int main(int argc, char* argv[])
 				{
 					cvui::iarea(pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToFramesAreaX, pathToFramesAreaY, pathToFramesAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathC = userPath.c_str();
-					cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPathC);
+					const char *userPatFramesC = userPathFrames.c_str();
+					cvui::printf(gui, pathToFramesAreaX + offsetX, pathToFramesAreaY + offsetY, userPatFramesC);
 				}
 				// if path to image
 				int pathToImageAreaX = pathPanelX + 7 * padding;
@@ -363,8 +364,8 @@ int main(int argc, char* argv[])
 				{
 					cvui::iarea(pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToImageAreaX, pathToImageAreaY, pathToImageAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathC = userPath.c_str();
-					cvui::printf(gui, pathToImageAreaX + offsetX, pathToImageAreaY + offsetY, userPathC);
+					const char *userPathImageC = userPathImage.c_str();
+					cvui::printf(gui, pathToImageAreaX + offsetX, pathToImageAreaY + offsetY, userPathImageC);
 				}
 				// if path to logo
 				int pathToLogoAreaX = pathPanelX + 6.5 * padding;
@@ -375,8 +376,8 @@ int main(int argc, char* argv[])
 				{
 					cvui::iarea(pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight);
 					cvui::rect(gui, pathToLogoAreaX, pathToLogoAreaY, pathToLogoAreaWidth, pathAreaHeight, 0x4d4d4d, 0x373737);
-					const char *userPathC = userPath.c_str();
-					cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathC);
+					const char *userPathLogoC = userPathLogo.c_str();
+					cvui::printf(gui, pathToLogoAreaX + offsetX, pathToLogoAreaY + offsetY, userPathLogoC);
 				}
 			}
 

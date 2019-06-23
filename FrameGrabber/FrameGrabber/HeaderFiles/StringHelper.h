@@ -50,6 +50,15 @@ namespace strhelp
 	*/
 	std::string createFrameName(long long int frameNumber, const std::string& format = "jpg");
 
+	/**
+	Make valid path.
+	Ex:
+	C:\\Folder\\20_6_2019_21h27m44s.avi
+
+	@param _userPath string given by user 
+	*/
+	void makeValidPath(std::string& _userPath);
+
 } // namespace strhelp
 
 // Function implementations
@@ -106,6 +115,13 @@ namespace strhelp
 		std::string videoName = std::to_string(frameNumber) + "." + format;
 		return videoName;
 	}
+
+	void makeValidPath(std::string& _userPath)
+	{
+		std::replace(_userPath.begin(), _userPath.end(), '\\', '/');
+		return;
+	}
+
 }
 
 #endif
