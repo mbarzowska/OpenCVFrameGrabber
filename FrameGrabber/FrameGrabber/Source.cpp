@@ -328,17 +328,23 @@ int main(int argc, char* argv[])
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingFrameBased)
 					{
-						int fbs = std::stoul(strFrameBasedStart, nullptr, 0);
-						int fbq = std::stoul(strFrameBasedQuantity, nullptr, 0);
-						player::frameNum = fbs % (int)cap.get(cv::CAP_PROP_FRAME_COUNT);
+						long long int fbs = std::stoul(strFrameBasedStart, nullptr, 0);
+						long long int fbq = std::stoul(strFrameBasedQuantity, nullptr, 0);
+						if (fbs < player::frameMax)
+						{
+							player::frameNum = fbs;
+						}
 					}
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingTimeBased)
 					{
-						int tbs = std::stoul(strTimeBasedStart, nullptr, 0);
-						int tbq = std::stoul(strTimeBasedQuantity, nullptr, 0);
+						long long int tbs = std::stoul(strTimeBasedStart, nullptr, 0);
+						long long int tbq = std::stoul(strTimeBasedQuantity, nullptr, 0);
 						int fps = cap.get(cv::CAP_PROP_FPS);
-						player::frameNum = (tbs * fps) % (int)cap.get(cv::CAP_PROP_FRAME_COUNT);
+						if (tbs < player::frameMax)
+						{
+							player::frameNum = (tbs * fps);
+						}
 					}
 
 					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
