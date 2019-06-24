@@ -727,12 +727,32 @@ int main(int argc, char* argv[])
 
 				if (currentMode.frameGrabbingFrameBased)
 				{
-					
+					if (valFrameBasedQuantity > 1)
+					{
+						outputVideo.write(frame);
+						valFrameBasedQuantity--;
+						player::playerAction(&player::frameNum, PLAYER_STANDARD);
+						if (valFrameBasedQuantity <= 1 || player::frameNum + 1 < player::frameMax)
+						{
+							valFrameBasedStart = 0;
+							valFrameBasedQuantity = 0;
+						}
+					}
 				}
 
 				if (currentMode.frameGrabbingTimeBased)
 				{
-					
+					if (valTimeBasedQuantity > 1)
+					{
+						outputVideo.write(frame);
+						valTimeBasedQuantity--;
+						player::playerAction(&player::frameNum, PLAYER_STANDARD);
+						if (valTimeBasedQuantity <= 1 || player::frameNum + 1 < player::frameMax)
+						{
+							valTimeBasedStart = 0;
+							valTimeBasedQuantity = 0;
+						}
+					}
 				}
 
 				if (currentMode.previousSceneRequest)
