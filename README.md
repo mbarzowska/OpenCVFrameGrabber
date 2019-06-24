@@ -39,7 +39,15 @@ OT - obecny tryb
 | CHECKBOX | Enable image PI | PI | | CTRL + 3 |
 | CHECKBOX | Enable logo PI | PI | | CTRL + 4 |
 
-## Opcje trybu V:
+## dostępne skróty klawiszowe
+
+### Ogólne
+
+| Skrót | Opis | Uwagi |
+| --- | --- | --- |
+| CTRL + Q  | Wyczyszczenie ciągu commands | w trybach C, V, I | 
+
+### Opcje trybu V:
 
 | Skrót | Opis | Uwagi |
 | --- | --- | --- |
@@ -54,9 +62,8 @@ OT - obecny tryb
 | ALT + RIGHT | 50 klatek w przód | |
 | CTRL + SHIFT + LEFT | Odtwarzaj od bieżącej do pierwszej klatki | |
 | CTRL + SHIFT + RIGHT | Odtwarzaj od bieżącej do końcowej klatki | |
-| CTRL + Q  | Wyczyszczenie ciągu commands | w trybach C, V, I |  |
 
-## Opcje trybu PI:
+### Opcje trybu PI:
 | Skrót | Opis | Uwagi |
 | --- | --- | --- |
 | CTRL + V |Wklejenie zawartości schowka do wybranych boxów |
