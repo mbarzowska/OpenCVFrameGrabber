@@ -18,7 +18,7 @@ Opcje menu:
 | CHECKBOX | Record straight to video file | C, V | Zapis strumienia OT do pliku video | S - start, E - end | C |
 | TRACKBAR | Set FPS | C, V | Ustawienie pożądanej ilości FPS dla pliku video | 
 | Save video to frames: | - | - | - | - | - |
-| CHECKBOX | On demand (must be running) | C, V | S - start, E - end |
+| CHECKBOX | On demand (must be running) | C, V | | S - start, E - end | V |
 | CHECKBOX | Given frames | V |
 | CHECKBOX | (Given frames) Start point | V | 
 | CHECKBOX | (Given frames) Quantity | V |
