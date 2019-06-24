@@ -64,6 +64,7 @@ long long int valTimeBasedQuantity = 0;
 bool isFramesFolderRead;
 string frameFolder; 
 string framesFolderPath;
+std::vector<string> framesToJoin;
 
 /* Frame / image saving */
 bool createFrameGrabbingFolderPath = false;
@@ -79,6 +80,8 @@ string videoSavingPath;
 
 /* Alert */
 string modeString;
+
+long long int frameCounter = 0;
 
 
 struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
@@ -197,17 +200,6 @@ void modeUpdate(int requestedFPS)
 	keyboard::updateKeys(keyboard::userKeys, keyboard::readKeys);
 }
 
-/* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
-void exit(cv::VideoCapture obj)
-{
-	obj.release();
-	cv::destroyAllWindows();
-}
-
-int frameCounter = 0;
-
-std::vector<string> framesToJoin;
-
 void readDirectory(const std::string& name, std::vector<string>& v)
 {
 	std::string pattern(name);
@@ -221,6 +213,13 @@ void readDirectory(const std::string& name, std::vector<string>& v)
 		} while (FindNextFile(hFind, &data) != 0);
 		FindClose(hFind);
 	}
+}
+
+/* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
+void exit(cv::VideoCapture obj)
+{
+	obj.release();
+	cv::destroyAllWindows();
 }
 
 int main(int argc, char* argv[])
@@ -381,8 +380,6 @@ int main(int argc, char* argv[])
 			{
 				frame.copyTo(frameWithLogo);
 			}
-			// Counter for frames saved TODO: restore 0 at new film etc add only if needed!!!!!!!!
-			frameCounter += 1;
 
 			if (currentMode.applyLogo)
 			{
@@ -710,15 +707,18 @@ int main(int argc, char* argv[])
 							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
 							CreateDirectory(framesSavingPath.c_str(), NULL);
 							createFrameGrabbingFolderPath = false;
+							frameCounter = 0;
 						}
 
 						if (currentMode.applyLogo)
 						{
 							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+							frameCounter++;
 						}
 						else
 						{
 							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+							frameCounter++;
 						}
 					}
 					catch (cv::Exception &e)
@@ -797,8 +797,14 @@ int main(int argc, char* argv[])
 				try
 				{
 					if (currentMode.recording) {
-						if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
-						else { outputVideo.write(frame); }
+						if (currentMode.applyLogo)
+						{
+							outputVideo.write(frameWithLogo);
+						}
+						else
+						{
+							outputVideo.write(frame);
+						}
 					}
 				}
 				catch (cv::Exception &e)
@@ -815,9 +821,18 @@ int main(int argc, char* argv[])
 							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
 							CreateDirectory(framesSavingPath.c_str(), NULL);
 							createFrameGrabbingFolderPath = false;
+							frameCounter = 0;
 						}
-						if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-						else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+						if (currentMode.applyLogo)
+						{
+							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+							frameCounter++;
+						}
+						else
+						{
+							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+							frameCounter++;
+						}
 					}
 				}
 				catch (cv::Exception &e)
