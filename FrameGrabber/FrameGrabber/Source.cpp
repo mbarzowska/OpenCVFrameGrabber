@@ -50,6 +50,16 @@ string userPathImage = "";
 string userPathLogo = "";
 string userPathVideo = "";
 
+/* Frame grabbing strings and ints */
+string strFrameBasedStart = "0";
+string strFrameBasedQuantity = "0";
+string strTimeBasedStart = "0";
+string strTimeBasedQuantity = "0";
+long long int valFrameBasedStart = 0;
+long long int valFrameBasedQuantity = 0;
+long long int valTimeBasedStart = 0;
+long long int valTimeBasedQuantity = 0;
+
 /* Frame reading */
 bool isFramesFolderRead;
 string frameFolder; 
@@ -154,14 +164,13 @@ void modeUpdate(int requestedFPS)
 		}
 		// Keyboard handler for recording state
 		keyboard::recordingModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
-			&currentMode, modeString,
-			&outputVideo);
+			&currentMode, modeString, &outputVideo);
 		// Keyboard handler for video state
 		keyboard::videoModeKeyboard(keyboard::readKeys, keyboard::userKeys, \
 			&currentMode, &player::frameNum, &player::frameMax, \
 			&player::playerSignal, userPathVideo, modeString, \
 			&outputVideo, &cap, &capWidth, &capHeight, &firstFrame, &lastFrame);
-		// FrameGrabbing keyboard handler
+		// FrameGrabbing handler
 		if (currentMode.frameGrabbingOnDemand && currentMode.modeVideo && !currentMode.playVideo)
 		{
 			currentMode.frameGrabbingOnDemand = false;
@@ -177,6 +186,11 @@ void modeUpdate(int requestedFPS)
 			&currentMode, &moveDirection, \
 			&logoX, &logoY);
 	}
+	// Input for the input paths and FrameGrabbing
+	keyboard::readRestKeyboard(keyboard::readKeys, keyboard::userKeys, &currentMode, \
+		userPathVideo, userPathFrames, userPathImage, userPathLogo, \
+		strFrameBasedStart, strFrameBasedQuantity, \
+		strTimeBasedStart, strTimeBasedQuantity);
 	// Clear KeyboardState
 	keyboard::clearKeyboard();
 	// Copy current pressed to next state used later at the begining
@@ -421,7 +435,8 @@ int main(int argc, char* argv[])
 							if (currentMode.frameBasedQuantityInput) { currentMode.frameBasedQuantityInput = false; }
 
 							cvui::rect(gui, margin + padding + 95, 293, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
-							cvui::printf(gui, margin + padding + 95 + offsetX, 293 + offsetY, "HERE YOUR START STR");
+							const char *strFrameBasedStartC = strFrameBasedStart.c_str();
+							cvui::printf(gui, margin + padding + 95 + offsetX, 293 + offsetY, strFrameBasedStartC);
 						}
 
 						currentMode.frameBasedQuantityInput = cvui::checkbox("Quantity: ", &currentMode.frameBasedQuantityInput);
@@ -430,7 +445,8 @@ int main(int argc, char* argv[])
 							if (currentMode.frameBasedStartPointInput) { currentMode.frameBasedStartPointInput = false; }
 
 							cvui::rect(gui, margin + padding + 85, 318, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
-							cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, "HERE YOUR QUANTITY STR");
+							const char *strFrameBasedQuantityC = strFrameBasedQuantity.c_str();
+							cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, strFrameBasedQuantityC);
 						}
 					}
 
@@ -450,7 +466,8 @@ int main(int argc, char* argv[])
 							if (currentMode.timeBasedQuantityInput) { currentMode.timeBasedQuantityInput = false; }
 
 							cvui::rect(gui, margin + padding + 95, 318, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
-							cvui::printf(gui, margin + padding + 95 + offsetX, 318 + offsetY, "HERE YOUR START STR");
+							const char *strTimeBasedStartC = strTimeBasedStart.c_str();
+							cvui::printf(gui, margin + padding + 95 + offsetX, 318 + offsetY, strTimeBasedStartC);
 						}
 
 						currentMode.timeBasedQuantityInput = cvui::checkbox("Quantity: ", &currentMode.timeBasedQuantityInput);
@@ -459,7 +476,8 @@ int main(int argc, char* argv[])
 							if (currentMode.timeBasedStartPointInput) { currentMode.timeBasedStartPointInput = false; }
 
 							cvui::rect(gui, margin + padding + 85, 343, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
-							cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, "HERE YOUR QUANTITY STR");
+							const char *strTimeBasedQuantityC = strTimeBasedQuantity.c_str();
+							cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, strTimeBasedQuantityC);
 						}
 					}
 				}

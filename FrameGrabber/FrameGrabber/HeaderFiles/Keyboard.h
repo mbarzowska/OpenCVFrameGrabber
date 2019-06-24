@@ -64,6 +64,9 @@ namespace keyboard
 		logoMoveDirections *_moveDirection, \
 		int *_logoX, int *_logoY);
 
+	void readRestKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
+		std::string& _userPathVideo, std::string& _userPathFrames, \
+		std::string& _userPathImage, std::string& _userPathLogo);
 }
 
 namespace keyboard
@@ -184,7 +187,9 @@ namespace keyboard
 	// Helper for other inputs beside classic ones
 	void readRestKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 		std::string& _userPathVideo, std::string& _userPathFrames, \
-		std::string& _userPathImage, std::string& _userPathLogo)
+		std::string& _userPathImage, std::string& _userPathLogo, \
+		std::string& _strFrameBasedStart, std::string& _strFrameBasedQuantity, \
+		std::string& _strTimeBasedStart, std::string& _strTimeBasedQuantity)
 	{
 		// Numeric values
 		for (int i = 0x30; i <= 0x39; i++)
@@ -200,6 +205,14 @@ namespace keyboard
 					_userPathImage += tmp;
 				if (_currentMode->pathLogoInput)
 					_userPathLogo += tmp;
+				if (_currentMode->frameBasedStartPointInput)
+					_strFrameBasedStart += tmp;
+				if (_currentMode->frameBasedQuantityInput)
+					_strFrameBasedQuantity += tmp;
+				if (_currentMode->timeBasedStartPointInput)
+					_strTimeBasedStart += tmp;
+				if (_currentMode->timeBasedQuantityInput)
+					_strTimeBasedQuantity += tmp;
 				_userKeys[i] = 0x0;
 				_readKeys[i] = 0x0;
 			}
@@ -346,6 +359,49 @@ namespace keyboard
 			_userKeys[VK_OEM_PERIOD] = 0x0;
 			_readKeys[VK_OEM_PERIOD] = 0x0;
 		}
+		// Backspace (remove last char from path)
+		if (CHECK_MSB(_userKeys[VK_BACK]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo = _userPathVideo.substr(0, _userPathVideo.size() - 1);
+			if (_currentMode->pathFramesInput)
+				_userPathFrames = _userPathFrames.substr(0, _userPathFrames.size() - 1);
+			if (_currentMode->pathImageInput)
+				_userPathImage = _userPathImage.substr(0, _userPathImage.size() - 1);
+			if (_currentMode->pathLogoInput)
+				_userPathLogo = _userPathLogo.substr(0, _userPathLogo.size() - 1);
+			if (_currentMode->frameBasedStartPointInput)
+				_strFrameBasedStart = _strFrameBasedStart.substr(0, _strFrameBasedStart.size() - 1);
+			if (_currentMode->frameBasedQuantityInput)
+				_strFrameBasedQuantity = _strFrameBasedQuantity.substr(0, _strFrameBasedQuantity.size() - 1);
+			if (_currentMode->timeBasedStartPointInput)
+				_strTimeBasedStart = _strTimeBasedStart.substr(0, _strTimeBasedStart.size() - 1);
+			if (_currentMode->timeBasedQuantityInput)
+				_strTimeBasedQuantity = _strTimeBasedQuantity.substr(0, _strTimeBasedQuantity.size() - 1);
+			_userKeys[VK_BACK] = 0x0;
+			_readKeys[VK_BACK] = 0x0;
+		}
+		if (CHECK_MSB(userKeys[VK_DELETE]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo = "";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames = "";
+			if (_currentMode->pathImageInput)
+				_userPathImage = "";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo = "";
+			if (_currentMode->frameBasedStartPointInput)
+				_strFrameBasedStart = "";
+			if (_currentMode->frameBasedQuantityInput)
+				_strFrameBasedQuantity = "";
+			if (_currentMode->timeBasedStartPointInput)
+				_strTimeBasedStart = "";
+			if (_currentMode->timeBasedQuantityInput)
+				_strTimeBasedQuantity = "";
+			_userKeys[VK_DELETE] = 0x0;
+			_readKeys[VK_DELETE] = 0x0;
+		}
 		return;
 	}
 
@@ -376,19 +432,6 @@ namespace keyboard
 				_userKeys[VK_CONTROL] = 0x0;
 				_readKeys[VK_V] = 0x0;
 				_readKeys[VK_CONTROL] = 0x0;
-			}
-			if (CHECK_MSB(userKeys[VK_DELETE]))
-			{
-				if (_currentMode->pathVideoInput)
-					_userPathVideo = "";
-				if (_currentMode->pathFramesInput)
-					_userPathFrames = "";
-				if (_currentMode->pathImageInput)
-					_userPathImage = "";
-				if (_currentMode->pathLogoInput)
-					_userPathLogo = "";
-				_userKeys[VK_DELETE] = 0x0;
-				_readKeys[VK_DELETE] = 0x0;
 			}
 			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_ONE]))
 			{
@@ -422,23 +465,6 @@ namespace keyboard
 				_readKeys[VK_FOUR] = 0x0;
 				_readKeys[VK_CONTROL] = 0x0;
 			}
-			// Backspace (remove last char from path)
-			if (CHECK_MSB(_userKeys[VK_BACK]))
-			{
-				if (_currentMode->pathVideoInput)
-					_userPathVideo = _userPathVideo.substr(0, _userPathVideo.size() - 1);
-				if (_currentMode->pathFramesInput)
-					_userPathFrames = _userPathFrames.substr(0, _userPathFrames.size() - 1);
-				if (_currentMode->pathImageInput)
-					_userPathImage = _userPathImage.substr(0, _userPathImage.size() - 1);
-				if (_currentMode->pathLogoInput)
-					_userPathLogo = _userPathLogo.substr(0, _userPathLogo.size() - 1);
-				_userKeys[VK_BACK] = 0x0;
-				_readKeys[VK_BACK] = 0x0;
-			}
-			readRestKeyboard(_readKeys, _userKeys, _currentMode, \
-				_userPathVideo,  _userPathFrames, \
-				_userPathImage, _userPathLogo);
 		}
 		return;
 	}
