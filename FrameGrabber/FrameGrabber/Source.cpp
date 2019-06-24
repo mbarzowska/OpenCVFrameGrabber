@@ -22,7 +22,7 @@ using namespace std;
 /* alerts		*/ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
 /* mode flags	*/ bool isLogoMovingMessedUp;
 /* mode flags	*/ bool isImageLoaded;
-/* on buttons	*/ bool saveFrameToFile;
+/* on buttons	*/ bool saveFrameToFile, isSpecifiedFrameGrabbingRequested;
 /* on trackbars	*/ int requestedFPS = 20;
 
 /* Matrices	*/
@@ -64,6 +64,7 @@ long long int valTimeBasedQuantity = 0;
 bool isFramesFolderRead;
 string frameFolder; 
 string framesFolderPath;
+std::vector<string> framesToJoin;
 
 /* Frame / image saving */
 bool createFrameGrabbingFolderPath = false;
@@ -79,6 +80,8 @@ string videoSavingPath;
 
 /* Alert */
 string modeString;
+
+long long int frameCounter = 0;
 
 
 struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
@@ -197,17 +200,6 @@ void modeUpdate(int requestedFPS)
 	keyboard::updateKeys(keyboard::userKeys, keyboard::readKeys);
 }
 
-/* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
-void exit(cv::VideoCapture obj)
-{
-	obj.release();
-	cv::destroyAllWindows();
-}
-
-int frameCounter = 0;
-
-std::vector<string> framesToJoin;
-
 void readDirectory(const std::string& name, std::vector<string>& v)
 {
 	std::string pattern(name);
@@ -221,6 +213,13 @@ void readDirectory(const std::string& name, std::vector<string>& v)
 		} while (FindNextFile(hFind, &data) != 0);
 		FindClose(hFind);
 	}
+}
+
+/* Custom method used to release VideoCapture objects and destroy all of the HighGUI windows. */
+void exit(cv::VideoCapture obj)
+{
+	obj.release();
+	cv::destroyAllWindows();
 }
 
 int main(int argc, char* argv[])
@@ -325,6 +324,40 @@ int main(int argc, char* argv[])
 				else if (currentMode.modeVideo)
 				{
 					isImageLoaded = false;
+
+					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingFrameBased)
+					{
+						valFrameBasedStart = std::stoll(strFrameBasedStart, nullptr, 0);
+						valFrameBasedQuantity = std::stoll(strFrameBasedQuantity, nullptr, 0);
+						if (valFrameBasedStart < player::frameMax)
+						{
+							player::frameNum = valFrameBasedStart;
+						}
+						outputVideo.open(
+							videoSavingPath + strhelp::createVideoName(),
+							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+							requestedFPS,
+							cv::Size(320, 240));
+						currentMode.playVideo = true;
+					}
+
+					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingTimeBased)
+					{
+						valTimeBasedStart = std::stoll(strTimeBasedStart, nullptr, 0);
+						valTimeBasedQuantity = std::stoll(strTimeBasedQuantity, nullptr, 0);
+						int fps = cap.get(cv::CAP_PROP_FPS);
+						if (valTimeBasedStart < player::frameMax)
+						{
+							player::frameNum = (valTimeBasedStart * fps);
+						}
+						outputVideo.open(
+							videoSavingPath + strhelp::createVideoName(),
+							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+							requestedFPS,
+							cv::Size(320, 240));
+						currentMode.playVideo = true;
+					}
+
 					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
 					cap >> frame;
 				}
@@ -347,8 +380,6 @@ int main(int argc, char* argv[])
 			{
 				frame.copyTo(frameWithLogo);
 			}
-			// Counter for frames saved TODO: restore 0 at new film etc add only if needed!!!!!!!!
-			frameCounter += 1;
 
 			if (currentMode.applyLogo)
 			{
@@ -440,6 +471,8 @@ int main(int argc, char* argv[])
 						cvui::rect(gui, margin + padding + 85, 318, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
 						const char *strFrameBasedQuantityC = strFrameBasedQuantity.c_str();
 						cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, strFrameBasedQuantityC);
+
+						isSpecifiedFrameGrabbingRequested = cvui::button(buttonWidth / 2, buttonHeight, "GO!");
 					}
 
 					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
@@ -463,6 +496,8 @@ int main(int argc, char* argv[])
 						cvui::rect(gui, margin + padding + 85, 343, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
 						const char *strTimeBasedQuantityC = strTimeBasedQuantity.c_str();
 						cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, strTimeBasedQuantityC);
+
+						isSpecifiedFrameGrabbingRequested = cvui::button(buttonWidth / 2, buttonHeight, "GO!");
 					}
 				}
 			}
@@ -672,15 +707,18 @@ int main(int argc, char* argv[])
 							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
 							CreateDirectory(framesSavingPath.c_str(), NULL);
 							createFrameGrabbingFolderPath = false;
+							frameCounter = 0;
 						}
 
 						if (currentMode.applyLogo)
 						{
 							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+							frameCounter++;
 						}
 						else
 						{
 							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+							frameCounter++;
 						}
 					}
 					catch (cv::Exception &e)
@@ -688,7 +726,48 @@ int main(int argc, char* argv[])
 						modeString += "Error while frame grabbing! ";
 					}
 				}
-				if (currentMode.previousSceneRequest)
+
+				if (currentMode.frameGrabbingFrameBased)
+				{
+					if (valFrameBasedQuantity >= 1)
+					{
+						outputVideo.write(frame);
+						valFrameBasedQuantity--;
+						if (valFrameBasedQuantity < 1 || player::frameNum + 1 > player::frameMax)
+						{
+							valFrameBasedStart = 0;
+							valFrameBasedQuantity = 0;
+							player::playerAction(&player::frameNum, PLAYER_NONE);
+							currentMode.playVideo = false;
+							currentMode.frameGrabbingFrameBased = false;
+						}
+						else
+						{
+							player::playerAction(&player::frameNum, PLAYER_STANDARD);
+						}
+					}
+				}
+				else if (currentMode.frameGrabbingTimeBased)
+				{
+					if (valTimeBasedQuantity >= 1)
+					{
+						outputVideo.write(frame);
+						valTimeBasedQuantity--;
+						if (valTimeBasedQuantity < 1 || player::frameNum + 1 > player::frameMax)
+						{
+							valTimeBasedStart = 0;
+							valTimeBasedQuantity = 0;
+							player::playerAction(&player::frameNum, PLAYER_NONE);
+							currentMode.playVideo = false;
+							currentMode.frameGrabbingTimeBased = false;
+						}
+						else 
+						{
+							player::playerAction(&player::frameNum, PLAYER_STANDARD);
+						}
+					}
+				}
+				else if (currentMode.previousSceneRequest)
 				{
 					// User new signal
 					if (!(player::playerSignal == PLAYER_STANDARD))
@@ -718,8 +797,14 @@ int main(int argc, char* argv[])
 				try
 				{
 					if (currentMode.recording) {
-						if (currentMode.applyLogo) { outputVideo.write(frameWithLogo); }
-						else { outputVideo.write(frame); }
+						if (currentMode.applyLogo)
+						{
+							outputVideo.write(frameWithLogo);
+						}
+						else
+						{
+							outputVideo.write(frame);
+						}
 					}
 				}
 				catch (cv::Exception &e)
@@ -736,9 +821,18 @@ int main(int argc, char* argv[])
 							framesSavingPath = framesFolderPath + frameGrabbingSessionId;
 							CreateDirectory(framesSavingPath.c_str(), NULL);
 							createFrameGrabbingFolderPath = false;
+							frameCounter = 0;
 						}
-						if (currentMode.applyLogo) { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params); }
-						else { cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params); }
+						if (currentMode.applyLogo)
+						{
+							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frameWithLogo, compression_params);
+							frameCounter++;
+						}
+						else
+						{
+							cv::imwrite(framesSavingPath + "\\" + std::to_string(frameCounter) + ".jpg", frame, compression_params);
+							frameCounter++;
+						}
 					}
 				}
 				catch (cv::Exception &e)
