@@ -34,10 +34,10 @@ OT - obecny tryb
 | CHECKBOX | Show image | C, V | Pokaż obraz wczytywany z podanej ścieżki |
 | CHECKBOX | Join frames to video | jeśli istnieje ścieżka | Złącz klatki z podanego pliku do filmu |
 | CHECKBOX | Enable PI | C, V, I | Włączenie możliwości wprowadzania ścieżek | CTRL + P | 
-| CHECKBOX | Enable video PI | PI | | | CTRL + 1 |
-| CHECKBOX | Enable frame PI | PI| | | CTRL + 2 |
-| CHECKBOX | Enable image PI | PI | | | CTRL + 3 |
-| CHECKBOX | Enable logo PI | PI | | | CTRL + 4 |
+| CHECKBOX | Enable video PI | PI | | CTRL + 1 |
+| CHECKBOX | Enable frame PI | PI| | CTRL + 2 |
+| CHECKBOX | Enable image PI | PI | | CTRL + 3 |
+| CHECKBOX | Enable logo PI | PI | | CTRL + 4 |
 
 ## Opcje trybu V:
 
