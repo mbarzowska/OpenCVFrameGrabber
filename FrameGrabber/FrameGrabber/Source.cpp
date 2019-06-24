@@ -22,7 +22,7 @@ using namespace std;
 /* alerts		*/ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
 /* mode flags	*/ bool isLogoMovingMessedUp;
 /* mode flags	*/ bool isImageLoaded;
-/* on buttons	*/ bool saveFrameToFile;
+/* on buttons	*/ bool saveFrameToFile, isSpecifiedFrameGrabbingRequested;
 /* on trackbars	*/ int requestedFPS = 20;
 
 /* Matrices	*/
@@ -325,6 +325,22 @@ int main(int argc, char* argv[])
 				else if (currentMode.modeVideo)
 				{
 					isImageLoaded = false;
+
+					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingFrameBased)
+					{
+						int fbs = std::stoul(strFrameBasedStart, nullptr, 0);
+						int fbq = std::stoul(strFrameBasedQuantity, nullptr, 0);
+						player::frameNum = fbs % (int)cap.get(cv::CAP_PROP_FRAME_COUNT);
+					}
+
+					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingTimeBased)
+					{
+						int tbs = std::stoul(strTimeBasedStart, nullptr, 0);
+						int tbq = std::stoul(strTimeBasedQuantity, nullptr, 0);
+						int fps = cap.get(cv::CAP_PROP_FPS);
+						player::frameNum = (tbs * fps) % (int)cap.get(cv::CAP_PROP_FRAME_COUNT);
+					}
+
 					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
 					cap >> frame;
 				}
@@ -440,6 +456,8 @@ int main(int argc, char* argv[])
 						cvui::rect(gui, margin + padding + 85, 318, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
 						const char *strFrameBasedQuantityC = strFrameBasedQuantity.c_str();
 						cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, strFrameBasedQuantityC);
+
+						isSpecifiedFrameGrabbingRequested = cvui::button(buttonWidth / 2, buttonHeight, "GO!");
 					}
 
 					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
@@ -463,6 +481,8 @@ int main(int argc, char* argv[])
 						cvui::rect(gui, margin + padding + 85, 343, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
 						const char *strTimeBasedQuantityC = strTimeBasedQuantity.c_str();
 						cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, strTimeBasedQuantityC);
+
+						isSpecifiedFrameGrabbingRequested = cvui::button(buttonWidth / 2, buttonHeight, "GO!");
 					}
 				}
 			}
