@@ -71,7 +71,7 @@ string videoSavingPath;
 string modeString;
 
 
-struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
+struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 struct logoMoveDirections moveDirection = { false, false, false, false };
 
@@ -246,7 +246,8 @@ int main(int argc, char* argv[])
 					false, currentMode.loadImage, false, \
 					false, false, false, false, \
 					currentMode.previousSceneRequest, currentMode.nextSceneRequest, \
-					currentMode.frameGrabbingFrameBased, currentMode.frameGrabbingTimeBased, currentMode.movieMaker };
+					currentMode.frameGrabbingFrameBased, currentMode.frameGrabbingTimeBased, currentMode.movieMaker, \
+					false, false, false, false };
 
 				if (!isFramesFolderRead)
 				{
@@ -410,21 +411,56 @@ int main(int argc, char* argv[])
 						if (currentMode.frameGrabbingTimeBased)
 						{
 							currentMode.frameGrabbingTimeBased = false;
+							currentMode.timeBasedStartPointInput = false;
+							currentMode.timeBasedQuantityInput = false;
 						}
-						cvui::rect(gui, margin + padding, 290, menuWidth, padding, 0x4d4d4d, 0x373737);
-						cvui::printf(gui, margin + padding + offsetX, 290 + offsetY, "HERE YOUR STR");
-						cvui::space(padding / 2);
+
+						currentMode.frameBasedStartPointInput = cvui::checkbox("Start point: ", &currentMode.frameBasedStartPointInput);
+						if (currentMode.frameBasedStartPointInput)
+						{
+							if (currentMode.frameBasedQuantityInput) { currentMode.frameBasedQuantityInput = false; }
+
+							cvui::rect(gui, margin + padding + 95, 293, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
+							cvui::printf(gui, margin + padding + 95 + offsetX, 293 + offsetY, "HERE YOUR START STR");
+						}
+
+						currentMode.frameBasedQuantityInput = cvui::checkbox("Quantity: ", &currentMode.frameBasedQuantityInput);
+						if (currentMode.frameBasedQuantityInput)
+						{
+							if (currentMode.frameBasedStartPointInput) { currentMode.frameBasedStartPointInput = false; }
+
+							cvui::rect(gui, margin + padding + 85, 318, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
+							cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, "HERE YOUR QUANTITY STR");
+						}
 					}
+
 					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
 					if (currentMode.frameGrabbingTimeBased)
 					{
 						if (currentMode.frameGrabbingFrameBased)
 						{
 							currentMode.frameGrabbingFrameBased = false;
+							currentMode.frameBasedStartPointInput = false;
+							currentMode.frameBasedQuantityInput = false;
 						}
-						cvui::rect(gui, margin + padding, 315, menuWidth, padding, 0x4d4d4d, 0x373737);
-						cvui::printf(gui, margin + padding + offsetX, 315 + offsetY, "HERE YOUR STR");
-						cvui::space(padding / 2);
+
+						currentMode.timeBasedStartPointInput = cvui::checkbox("Start point: ", &currentMode.timeBasedStartPointInput);
+						if (currentMode.timeBasedStartPointInput)
+						{
+							if (currentMode.timeBasedQuantityInput) { currentMode.timeBasedQuantityInput = false; }
+
+							cvui::rect(gui, margin + padding + 95, 318, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
+							cvui::printf(gui, margin + padding + 95 + offsetX, 318 + offsetY, "HERE YOUR START STR");
+						}
+
+						currentMode.timeBasedQuantityInput = cvui::checkbox("Quantity: ", &currentMode.timeBasedQuantityInput);
+						if (currentMode.timeBasedQuantityInput)
+						{
+							if (currentMode.timeBasedStartPointInput) { currentMode.timeBasedStartPointInput = false; }
+
+							cvui::rect(gui, margin + padding + 85, 343, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
+							cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, "HERE YOUR QUANTITY STR");
+						}
 					}
 				}
 			}

@@ -24,6 +24,10 @@ struct modes
 	bool frameGrabbingFrameBased;
 	bool frameGrabbingTimeBased;
 	bool movieMaker;
+	bool frameBasedStartPointInput;
+	bool frameBasedQuantityInput;
+	bool timeBasedStartPointInput;
+	bool timeBasedQuantityInput;
 };
 
 struct logoMoveDirections
