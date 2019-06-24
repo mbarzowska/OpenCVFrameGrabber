@@ -39,7 +39,7 @@ OT - obecny tryb
 | CHECKBOX | Enable image PI | PI | | CTRL + 3 |
 | CHECKBOX | Enable logo PI | PI | | CTRL + 4 |
 
-## dostępne skróty klawiszowe
+## Dostępne skróty klawiszowe
 
 ### Ogólne
 
