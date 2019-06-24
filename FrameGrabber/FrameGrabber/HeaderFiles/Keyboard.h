@@ -416,7 +416,8 @@ namespace keyboard
 			{
 				HANDLE clip = GetClipboardData(CF_TEXT);
 				CloseClipboard();
-				_clipPath = (char *)clip;
+				if (clip)
+					_clipPath = (char *)clip;
 			}
 			if (CHECK_MSB(_userKeys[VK_CONTROL]) && CHECK_MSB(_userKeys[VK_V]))
 			{
