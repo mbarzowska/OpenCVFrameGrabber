@@ -3,11 +3,11 @@
 #include <iostream>
 #include <windows.h>
 #include <conio.h>
+#include <regex>
 #include "HeaderFiles/Modes.h"
 #include "HeaderFiles/StringHelper.h"
 #include "HeaderFiles/Player.h"
 #include "HeaderFiles/Keyboard.h"
-#include <regex>
 
 using namespace std;
 
@@ -16,14 +16,14 @@ using namespace std;
 #define CVUI_WINDOW_NAME "Frame grabber"
 
 /* cvUI	related	*/
-/* on checkbox	*/
-/* on trackbar	*/ int requestedFPS = 20;
-/* common		*/ int margin = 20, padding = 20;
-/* */ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
-/* */ bool isLogoMovingMessedUp, isImageLoaded;
-bool saveFrameToFile;
-
-bool isFramesFolderRead; string frameFolder;
+/* aesthetic	*/ int margin = 20, padding = 20;
+/* aesthetic	*/ int offsetX = 6, offsetY = 4;
+/* aesthetic	*/ int buttonWidth = 60, buttonHeight = 30;
+/* alerts		*/ string secondPanelLogoAlertString = "", secondPanelLogoAdditionString = "";
+/* mode flags	*/ bool isLogoMovingMessedUp;
+/* mode flags	*/ bool isImageLoaded;
+/* on buttons	*/ bool saveFrameToFile;
+/* on trackbars	*/ int requestedFPS = 20;
 
 /* Matrices	*/
 cv::Mat frame;
@@ -34,37 +34,42 @@ cv::Mat image;
 cv::Mat3b roi;
 cv::Mat4b logo;
 
-/* Helpers and other variables */
+/* VideoCapture	*/
 cv::VideoCapture cap;
-string videoSavingPath;
-char userChar = 0;
-double capWidth = 0.0;
-double capHeight = 0.0;
-int logoX = 0;
-int logoY = 0;
-double alpha = 0.3;
+double capWidth = 0.0, capHeight = 0.0;
+
+/* Logo */
 bool restore;
-int buttonWidth = 60;
-int buttonHeight = 30;
-string imagesSavingPath;
-string framesFolderPath;
-string framesSavingPath;
+double alpha = 0.3;
+int logoX = 0, logoY = 0;
 
 /* User paths */
-string userPathVideo = ""; // path to file defined by user
+char userChar = 0;
 string userPathFrames = "";
 string userPathImage = "";
 string userPathLogo = "";
+string userPathVideo = "";
 
-/* Image saving */
-vector<int> compression_params;
-string frameGrabbingSessionId;
+/* Frame reading */
+bool isFramesFolderRead;
+string frameFolder; 
+string framesFolderPath;
+
+/* Frame / image saving */
 bool createFrameGrabbingFolderPath = false;
+string imagesSavingPath;
+string framesSavingPath;
+string frameGrabbingSessionId;
+vector<int> compression_params;
 
 /* Video writing */
-string videoName;
 cv::VideoWriter outputVideo;
+string videoName;
+string videoSavingPath;
+
+/* Alert */
 string modeString;
+
 
 struct modes currentMode = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
 
@@ -295,7 +300,7 @@ int main(int argc, char* argv[])
 							int tmpRatio = image.rows / image.cols;
 							if (image.rows > frame.rows && image.cols > frame.cols)
 							{
-								cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+								cv::resize(image, image, cv::Size(frame.cols, frame.cols * tmpRatio));
 							}
 							isImageLoaded = true;
 							frame = image;
@@ -402,10 +407,24 @@ int main(int argc, char* argv[])
 					currentMode.frameGrabbingFrameBased = cvui::checkbox("Given frames", &currentMode.frameGrabbingFrameBased);
 					if (currentMode.frameGrabbingFrameBased)
 					{
+						if (currentMode.frameGrabbingTimeBased)
+						{
+							currentMode.frameGrabbingTimeBased = false;
+						}
+						cvui::rect(gui, margin + padding, 290, menuWidth, padding, 0x4d4d4d, 0x373737);
+						cvui::printf(gui, margin + padding + offsetX, 290 + offsetY, "HERE YOUR STR");
+						cvui::space(padding / 2);
 					}
 					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
 					if (currentMode.frameGrabbingTimeBased)
 					{
+						if (currentMode.frameGrabbingFrameBased)
+						{
+							currentMode.frameGrabbingFrameBased = false;
+						}
+						cvui::rect(gui, margin + padding, 315, menuWidth, padding, 0x4d4d4d, 0x373737);
+						cvui::printf(gui, margin + padding + offsetX, 315 + offsetY, "HERE YOUR STR");
+						cvui::space(padding / 2);
 					}
 				}
 			}
@@ -501,7 +520,6 @@ int main(int argc, char* argv[])
 			currentMode.pathInput = cvui::checkbox("Enable path input mode", &currentMode.pathInput);
 			// Start input section
 			int pathAreaHeight = padding;
-			int offsetX = 6, offsetY = 4;
 			// if path to video mode
 			int pathToVideoAreaX = pathPanelX + 7 * padding;
 			int pathToVideoAreaY = pathPanelY + 2 * padding;
