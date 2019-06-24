@@ -334,6 +334,11 @@ int main(int argc, char* argv[])
 						{
 							player::frameNum = fbs;
 						}
+						outputVideo.open(
+							videoSavingPath + strhelp::createVideoName(),
+							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+							requestedFPS,
+							cv::Size(320, 240));
 					}
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingTimeBased)
@@ -345,6 +350,11 @@ int main(int argc, char* argv[])
 						{
 							player::frameNum = (tbs * fps);
 						}
+						outputVideo.open(
+							videoSavingPath + strhelp::createVideoName(),
+							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+							requestedFPS,
+							cv::Size(320, 240));
 					}
 
 					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
