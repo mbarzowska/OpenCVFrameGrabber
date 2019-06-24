@@ -181,6 +181,174 @@ namespace keyboard
 		return;
 	}
 
+	// Helper for other inputs beside classic ones
+	void readRestKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
+		std::string& _userPathVideo, std::string& _userPathFrames, \
+		std::string& _userPathImage, std::string& _userPathLogo)
+	{
+		// Numeric values
+		for (int i = 0x30; i <= 0x39; i++)
+		{
+			if (CHECK_MSB(_userKeys[i]))
+			{
+				char tmp = static_cast<char>(i);
+				if (_currentMode->pathVideoInput)
+					_userPathVideo += tmp;
+				if (_currentMode->pathFramesInput)
+					_userPathFrames += tmp;
+				if (_currentMode->pathImageInput)
+					_userPathImage += tmp;
+				if (_currentMode->pathLogoInput)
+					_userPathLogo += tmp;
+				_userKeys[i] = 0x0;
+				_readKeys[i] = 0x0;
+			}
+		}
+		// Alphabet values
+		for (int i = 0x41; i <= 0x5a; i++)
+		{
+			if (CHECK_MSB(_userKeys[i]))
+			{
+				char tmp = static_cast<char>(i);
+				if (_currentMode->pathVideoInput)
+					_userPathVideo += tmp;
+				if (_currentMode->pathFramesInput)
+					_userPathFrames += tmp;
+				if (_currentMode->pathImageInput)
+					_userPathImage += tmp;
+				if (_currentMode->pathLogoInput)
+					_userPathLogo += tmp;
+				_userKeys[i] = 0x0;
+				_readKeys[i] = 0x0;
+			}
+		}
+		// Other extra values
+		if (CHECK_MSB(_userKeys[VK_SPACE]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += " ";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += " ";
+			if (_currentMode->pathImageInput)
+				_userPathImage += " ";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += " ";
+			_userKeys[VK_SPACE] = 0x0;
+			_readKeys[VK_SPACE] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_SEPARATOR]) || CHECK_MSB(_userKeys[VK_SUBTRACT]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += "_";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += "_";
+			if (_currentMode->pathImageInput)
+				_userPathImage += "_";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += "_";
+			_userKeys[VK_SEPARATOR] = 0x0;
+			_readKeys[VK_SEPARATOR] = 0x0;
+			_userKeys[VK_SUBTRACT] = 0x0;
+			_readKeys[VK_SUBTRACT] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_OEM_1]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += ":";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += ":";
+			if (_currentMode->pathImageInput)
+				_userPathImage += ":";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += ":";
+			_userKeys[VK_OEM_1] = 0x0;
+			_readKeys[VK_OEM_1] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_OEM_2]) || CHECK_MSB(_userKeys[VK_DIVIDE]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += "/";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += "/";
+			if (_currentMode->pathImageInput)
+				_userPathImage += "/";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += "/";
+			_userKeys[VK_OEM_2] = 0x0;
+			_readKeys[VK_OEM_2] = 0x0;
+			_userKeys[VK_DIVIDE] = 0x0;
+			_readKeys[VK_DIVIDE] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_OEM_5]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += "\\";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += "\\";
+			if (_currentMode->pathImageInput)
+				_userPathImage += "\\";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += "\\";
+			_userKeys[VK_OEM_5] = 0x0;
+			_readKeys[VK_OEM_5] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_OEM_PLUS]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += "+";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += "+";
+			if (_currentMode->pathImageInput)
+				_userPathImage += "+";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += "+";
+			_userKeys[VK_OEM_PLUS] = 0x0;
+			_readKeys[VK_OEM_PLUS] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_SHIFT]) && CHECK_MSB(_userKeys[VK_OEM_MINUS]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += "_";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += "_";
+			if (_currentMode->pathImageInput)
+				_userPathImage += "_";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += "_";
+			_userKeys[VK_OEM_MINUS] = 0x0;
+			_readKeys[VK_OEM_MINUS] = 0x0;
+			_userKeys[VK_SHIFT] = 0x0;
+			_readKeys[VK_SHIFT] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_OEM_MINUS]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += "-";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += "-";
+			if (_currentMode->pathImageInput)
+				_userPathImage += "-";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += "-";
+			_userKeys[VK_OEM_MINUS] = 0x0;
+			_readKeys[VK_OEM_MINUS] = 0x0;
+		}
+		if (CHECK_MSB(_userKeys[VK_OEM_PERIOD]))
+		{
+			if (_currentMode->pathVideoInput)
+				_userPathVideo += ".";
+			if (_currentMode->pathFramesInput)
+				_userPathFrames += ".";
+			if (_currentMode->pathImageInput)
+				_userPathImage += ".";
+			if (_currentMode->pathLogoInput)
+				_userPathLogo += ".";
+			_userKeys[VK_OEM_PERIOD] = 0x0;
+			_readKeys[VK_OEM_PERIOD] = 0x0;
+		}
+		return;
+	}
+
 	void pathModeKeyboard(BYTE *_readKeys, BYTE *_userKeys, modes *_currentMode, \
 		std::string& _userPathVideo, std::string& _userPathFrames, \
 		std::string& _userPathImage, std::string& _userPathLogo)
@@ -268,11 +436,9 @@ namespace keyboard
 				_userKeys[VK_BACK] = 0x0;
 				_readKeys[VK_BACK] = 0x0;
 			}
-			//if (CHECK_MSB(_userKeys[VK_SHIFT]))
-			//{
-			//	_userKeys[VK_SHIFT] = 0x0;
-			//	_readKeys[VK_SHIFT] = 0x0;
-			//}
+			readRestKeyboard(_readKeys, _userKeys, _currentMode, \
+				_userPathVideo,  _userPathFrames, \
+				_userPathImage, _userPathLogo);
 		}
 		return;
 	}
