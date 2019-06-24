@@ -328,8 +328,8 @@ int main(int argc, char* argv[])
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingFrameBased)
 					{
-						valFrameBasedStart = std::stoul(strFrameBasedStart, nullptr, 0);
-						valFrameBasedQuantity = std::stoul(strFrameBasedQuantity, nullptr, 0);
+						valFrameBasedStart = std::stoll(strFrameBasedStart, nullptr, 0);
+						valFrameBasedQuantity = std::stoll(strFrameBasedQuantity, nullptr, 0);
 						if (valFrameBasedStart < player::frameMax)
 						{
 							player::frameNum = valFrameBasedStart;
@@ -339,12 +339,13 @@ int main(int argc, char* argv[])
 							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
 							requestedFPS,
 							cv::Size(320, 240));
+						currentMode.playVideo = true;
 					}
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingTimeBased)
 					{
-						valTimeBasedStart = std::stoul(strTimeBasedStart, nullptr, 0);
-						valTimeBasedQuantity = std::stoul(strTimeBasedQuantity, nullptr, 0);
+						valTimeBasedStart = std::stoll(strTimeBasedStart, nullptr, 0);
+						valTimeBasedQuantity = std::stoll(strTimeBasedQuantity, nullptr, 0);
 						int fps = cap.get(cv::CAP_PROP_FPS);
 						if (valTimeBasedStart < player::frameMax)
 						{
@@ -355,6 +356,7 @@ int main(int argc, char* argv[])
 							cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
 							requestedFPS,
 							cv::Size(320, 240));
+						currentMode.playVideo = true;
 					}
 
 					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
@@ -727,35 +729,45 @@ int main(int argc, char* argv[])
 
 				if (currentMode.frameGrabbingFrameBased)
 				{
-					if (valFrameBasedQuantity > 1)
+					if (valFrameBasedQuantity >= 1)
 					{
 						outputVideo.write(frame);
 						valFrameBasedQuantity--;
-						player::playerAction(&player::frameNum, PLAYER_STANDARD);
-						if (valFrameBasedQuantity <= 1 || player::frameNum + 1 < player::frameMax)
+						if (valFrameBasedQuantity < 1 || player::frameNum + 1 > player::frameMax)
 						{
 							valFrameBasedStart = 0;
 							valFrameBasedQuantity = 0;
+							player::playerAction(&player::frameNum, PLAYER_NONE);
+							currentMode.playVideo = false;
+							currentMode.frameGrabbingFrameBased = false;
+						}
+						else
+						{
+							player::playerAction(&player::frameNum, PLAYER_STANDARD);
 						}
 					}
 				}
-
-				if (currentMode.frameGrabbingTimeBased)
+				else if (currentMode.frameGrabbingTimeBased)
 				{
-					if (valTimeBasedQuantity > 1)
+					if (valTimeBasedQuantity >= 1)
 					{
 						outputVideo.write(frame);
 						valTimeBasedQuantity--;
-						player::playerAction(&player::frameNum, PLAYER_STANDARD);
-						if (valTimeBasedQuantity <= 1 || player::frameNum + 1 < player::frameMax)
+						if (valTimeBasedQuantity < 1 || player::frameNum + 1 > player::frameMax)
 						{
 							valTimeBasedStart = 0;
 							valTimeBasedQuantity = 0;
+							player::playerAction(&player::frameNum, PLAYER_NONE);
+							currentMode.playVideo = false;
+							currentMode.frameGrabbingTimeBased = false;
+						}
+						else 
+						{
+							player::playerAction(&player::frameNum, PLAYER_STANDARD);
 						}
 					}
 				}
-
-				if (currentMode.previousSceneRequest)
+				else if (currentMode.previousSceneRequest)
 				{
 					// User new signal
 					if (!(player::playerSignal == PLAYER_STANDARD))
