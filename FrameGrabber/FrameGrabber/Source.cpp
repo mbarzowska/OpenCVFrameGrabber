@@ -430,24 +430,16 @@ int main(int argc, char* argv[])
 						}
 
 						currentMode.frameBasedStartPointInput = cvui::checkbox("Start point: ", &currentMode.frameBasedStartPointInput);
-						if (currentMode.frameBasedStartPointInput)
-						{
-							if (currentMode.frameBasedQuantityInput) { currentMode.frameBasedQuantityInput = false; }
 
-							cvui::rect(gui, margin + padding + 95, 293, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
-							const char *strFrameBasedStartC = strFrameBasedStart.c_str();
-							cvui::printf(gui, margin + padding + 95 + offsetX, 293 + offsetY, strFrameBasedStartC);
-						}
+						cvui::rect(gui, margin + padding + 95, 293, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
+						const char *strFrameBasedStartC = strFrameBasedStart.c_str();
+						cvui::printf(gui, margin + padding + 95 + offsetX, 293 + offsetY, strFrameBasedStartC);
 
 						currentMode.frameBasedQuantityInput = cvui::checkbox("Quantity: ", &currentMode.frameBasedQuantityInput);
-						if (currentMode.frameBasedQuantityInput)
-						{
-							if (currentMode.frameBasedStartPointInput) { currentMode.frameBasedStartPointInput = false; }
 
-							cvui::rect(gui, margin + padding + 85, 318, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
-							const char *strFrameBasedQuantityC = strFrameBasedQuantity.c_str();
-							cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, strFrameBasedQuantityC);
-						}
+						cvui::rect(gui, margin + padding + 85, 318, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
+						const char *strFrameBasedQuantityC = strFrameBasedQuantity.c_str();
+						cvui::printf(gui, margin + padding + 85 + offsetX, 318 + offsetY, strFrameBasedQuantityC);
 					}
 
 					currentMode.frameGrabbingTimeBased = cvui::checkbox("Given time", &currentMode.frameGrabbingTimeBased);
@@ -461,24 +453,16 @@ int main(int argc, char* argv[])
 						}
 
 						currentMode.timeBasedStartPointInput = cvui::checkbox("Start point: ", &currentMode.timeBasedStartPointInput);
-						if (currentMode.timeBasedStartPointInput)
-						{
-							if (currentMode.timeBasedQuantityInput) { currentMode.timeBasedQuantityInput = false; }
 
-							cvui::rect(gui, margin + padding + 95, 318, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
-							const char *strTimeBasedStartC = strTimeBasedStart.c_str();
-							cvui::printf(gui, margin + padding + 95 + offsetX, 318 + offsetY, strTimeBasedStartC);
-						}
+						cvui::rect(gui, margin + padding + 95, 318, menuWidth - 95, padding, 0x4d4d4d, 0x373737);
+						const char *strTimeBasedStartC = strTimeBasedStart.c_str();
+						cvui::printf(gui, margin + padding + 95 + offsetX, 318 + offsetY, strTimeBasedStartC);
 
 						currentMode.timeBasedQuantityInput = cvui::checkbox("Quantity: ", &currentMode.timeBasedQuantityInput);
-						if (currentMode.timeBasedQuantityInput)
-						{
-							if (currentMode.timeBasedStartPointInput) { currentMode.timeBasedStartPointInput = false; }
 
-							cvui::rect(gui, margin + padding + 85, 343, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
-							const char *strTimeBasedQuantityC = strTimeBasedQuantity.c_str();
-							cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, strTimeBasedQuantityC);
-						}
+						cvui::rect(gui, margin + padding + 85, 343, menuWidth - 85, padding, 0x4d4d4d, 0x373737);
+						const char *strTimeBasedQuantityC = strTimeBasedQuantity.c_str();
+						cvui::printf(gui, margin + padding + 85 + offsetX, 343 + offsetY, strTimeBasedQuantityC);
 					}
 				}
 			}
