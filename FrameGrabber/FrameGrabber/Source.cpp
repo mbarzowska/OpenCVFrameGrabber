@@ -235,6 +235,7 @@ int main(int argc, char* argv[])
 		{
 			if (currentMode.movieMaker)
 			{
+				isImageLoaded = false;
 				currentMode = { false, currentMode.modeVideo, \
 					false, false, currentMode.applyLogo, \
 					false, currentMode.loadImage, false, \
@@ -273,33 +274,43 @@ int main(int argc, char* argv[])
 					currentMode.movieMaker = false;
 					currentMode.pathFramesInput = false;
 					currentMode.pathInput = false;
+					isFramesFolderRead = false;
 					userPathFrames.clear();
 					framesToJoin.clear();
 				}
 			}
 			else
 			{
-				if (currentMode.modeVideo)
-				{
-					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
-					cap >> frame;
-				}
-				else if (currentMode.loadImage)
+				if (currentMode.loadImage)
 				{
 					if (!isImageLoaded)
 					{
 						image = cv::imread(userPathImage);
-						int tmpRatio = image.rows / image.cols;
-						if (image.rows > frame.rows && image.cols > frame.cols)
+						if (image.rows == 0 || image.cols == 0)
 						{
-							cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+							modeString += "Can't load the image! ";
 						}
-						isImageLoaded = true;
+						else
+						{
+							int tmpRatio = image.rows / image.cols;
+							if (image.rows > frame.rows && image.cols > frame.cols)
+							{
+								cv::resize(image, image, cv::Size(image.cols / tmpRatio, frame.rows));
+							}
+							isImageLoaded = true;
+							frame = image;
+						}
 					}
-					frame = image;
+				}
+				else if (currentMode.modeVideo)
+				{
+					isImageLoaded = false;
+					cap.set(cv::CAP_PROP_POS_FRAMES, player::frameNum);
+					cap >> frame;
 				}
 				else
 				{
+					isImageLoaded = false;
 					cap >> frame;
 				}
 			}
@@ -400,9 +411,13 @@ int main(int argc, char* argv[])
 			}
 			saveFrameToFile = cvui::button(buttonWidth * 2.5, buttonHeight, "Save current to file");
 			cvui::space(padding);
-			if (!userPathImage.empty())
+			if (!userPathImage.empty() || isImageLoaded)
 			{
 				currentMode.loadImage = cvui::checkbox("Show image", &currentMode.loadImage);
+				if (currentMode.loadImage == false)
+				{
+					isImageLoaded = false;
+				}
 			}
 			if (!userPathFrames.empty())
 			{
@@ -425,7 +440,7 @@ int main(int argc, char* argv[])
 			{
 				modeString += "Unable to load left frame! ";
 			}
-			if (currentMode.modeVideo)
+			if (currentMode.modeVideo && !(currentMode.loadImage))
 			{
 				cvui::text("Frame track bar:");
 				// Need to convert in that way, maybe put in the player to do it under the hood

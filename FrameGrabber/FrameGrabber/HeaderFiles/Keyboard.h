@@ -335,13 +335,14 @@ namespace keyboard
 		if (CHECK_MSB(_userKeys[VK_V]))
 		{
 			_currentMode->recording = false;
+			_currentMode->loadImage = false;
 			_currentMode->modeVideo = !_currentMode->modeVideo;
 			_currentMode->playVideo = false;
-			if (_userPathVideo == "")
-			{
-				_modeString += "Set valid path to video file! ";
-			}
-			else if (_currentMode->modeVideo)
+			//if (_userPathVideo == "")
+			//{
+			//	_modeString += "Set valid path to video file! ";
+			//}
+			if (_currentMode->modeVideo)
 			{
 				// cap.release();
 				try
