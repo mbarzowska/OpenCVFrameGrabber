@@ -328,11 +328,11 @@ int main(int argc, char* argv[])
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingFrameBased)
 					{
-						long long int fbs = std::stoul(strFrameBasedStart, nullptr, 0);
-						long long int fbq = std::stoul(strFrameBasedQuantity, nullptr, 0);
-						if (fbs < player::frameMax)
+						valFrameBasedStart = std::stoul(strFrameBasedStart, nullptr, 0);
+						valFrameBasedQuantity = std::stoul(strFrameBasedQuantity, nullptr, 0);
+						if (valFrameBasedStart < player::frameMax)
 						{
-							player::frameNum = fbs;
+							player::frameNum = valFrameBasedStart;
 						}
 						outputVideo.open(
 							videoSavingPath + strhelp::createVideoName(),
@@ -343,12 +343,12 @@ int main(int argc, char* argv[])
 
 					if (isSpecifiedFrameGrabbingRequested && currentMode.frameGrabbingTimeBased)
 					{
-						long long int tbs = std::stoul(strTimeBasedStart, nullptr, 0);
-						long long int tbq = std::stoul(strTimeBasedQuantity, nullptr, 0);
+						valTimeBasedStart = std::stoul(strTimeBasedStart, nullptr, 0);
+						valTimeBasedQuantity = std::stoul(strTimeBasedQuantity, nullptr, 0);
 						int fps = cap.get(cv::CAP_PROP_FPS);
-						if (tbs < player::frameMax)
+						if (valTimeBasedStart < player::frameMax)
 						{
-							player::frameNum = (tbs * fps);
+							player::frameNum = (valTimeBasedStart * fps);
 						}
 						outputVideo.open(
 							videoSavingPath + strhelp::createVideoName(),
@@ -724,6 +724,17 @@ int main(int argc, char* argv[])
 						modeString += "Error while frame grabbing! ";
 					}
 				}
+
+				if (currentMode.frameGrabbingFrameBased)
+				{
+					
+				}
+
+				if (currentMode.frameGrabbingTimeBased)
+				{
+					
+				}
+
 				if (currentMode.previousSceneRequest)
 				{
 					// User new signal
