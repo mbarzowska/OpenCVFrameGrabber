@@ -1,16 +1,18 @@
 # OpenCVFrameGrabber
 
-Używane skróty: \
-OT - obecny tryb
-
-Główne tryby pracy: \
+## Główne tryby pracy: 
 C - kamera, przechwytywanie obrazu z kamery \
 V - video, przechwytywanie obrazu z pliku video \
 I - image, przechwytywanie obrazu z pliku graficznego 
 
-Tryb PI - path input, wprowadzanie ścieżki
+## Inne tryby: 
+PI - path input, wprowadzanie ścieżki \
+L - logo, tryb nakładania logo
 
-Opcje menu:
+## Inne używane w README skróty: 
+OT - obecny tryb
+
+## Opcje menu:
 
 | Typ opcji | Opcja | Dostępne w trybie | Opis | Skrót | Tryb skrótu |
 | ---  | ---  | --- | --- | --- | --- |
@@ -37,10 +39,3 @@ Opcje menu:
 | CHECKBOX | Enable frame PI | 2 | jeśli PI włączony |
 | CHECKBOX | Enable image PI | 3 | jeśli PI włączony |
 | CHECKBOX | Enable logo PI | 4 | jeśli PI włączony |
-
-Inne skróty: 
-
-| Skrót | Tryb | Opis | 
-| --- | --- | --- |
-| SPACE | V | Pauza/Odtwarzanie |
-| CTRL + Q | 
